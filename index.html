@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Custom Cursor Demo</title>
+  <style>
+    /* ── Custom cursors ── */
+    body {
+      cursor: url('cursor.svg') 16 16, auto;
+    }
+
+    a, button, .clickable {
+      cursor: url('cursor.svg') 16 16, pointer;
+    }
+
+    /* ── Page styles ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #1a1a2e;
+      color: #eee;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 60px 20px;
+      gap: 32px;
+    }
+
+    h1 {
+      font-size: 2.5rem;
+      background: linear-gradient(135deg, #FF6B6B, #FFD700);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p {
+      max-width: 560px;
+      line-height: 1.7;
+      color: #aaa;
+      text-align: center;
+    }
+
+    .card {
+      background: #16213e;
+      border: 1px solid #0f3460;
+      border-radius: 12px;
+      padding: 32px 40px;
+      max-width: 560px;
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      align-items: center;
+    }
+
+    .card h2 {
+      color: #FFD700;
+      font-size: 1.2rem;
+    }
+
+    a {
+      color: #FF6B6B;
+      text-decoration: none;
+      border-bottom: 1px dashed #FF6B6B;
+      transition: color 0.2s;
+    }
+
+    a:hover { color: #FFD700; border-color: #FFD700; }
+
+    button {
+      background: linear-gradient(135deg, #FF6B6B, #e74c3c);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-size: 1rem;
+      font-weight: 600;
+      transition: transform 0.15s, box-shadow 0.15s;
+      box-shadow: 0 4px 15px rgba(255,107,107,0.3);
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255,107,107,0.5);
+    }
+
+    button:active { transform: translateY(0); }
+
+    .badge {
+      display: inline-block;
+      background: #0f3460;
+      border-radius: 999px;
+      padding: 6px 18px;
+      font-size: 0.85rem;
+      color: #7ec8e3;
+    }
+
+    footer {
+      color: #555;
+      font-size: 0.8rem;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Custom Cursor Demo</h1>
+
+  <p>
+    Move your mouse around — the default arrow is replaced by a custom
+    <strong style="color:#FFD700">star cursor</strong> defined via CSS
+    <code style="color:#FF6B6B">cursor: url('cursor.svg')</code>.
+  </p>
+
+  <div class="card">
+    <h2>Interactive Elements</h2>
+    <p>Hover over links and buttons to see the cursor stay custom.</p>
+    <a href="#">A sample hyperlink</a>
+    <button onclick="alert('It works!')">Click Me</button>
+    <span class="badge">Hover anywhere on the page</span>
+  </div>
+
+  <div class="card">
+    <h2>How it works</h2>
+    <p>
+      The CSS rule below applies the cursor globally:<br><br>
+      <code style="color:#7ec8e3; font-size:0.9rem;">
+        body { cursor: url('cursor.svg') 16 16, auto; }
+      </code><br><br>
+      The two numbers after the URL are the <em>hotspot</em> — the pixel
+      coordinates of the active click point within the image.
+      The fallback <code style="color:#FF6B6B">auto</code> is used when
+      the image cannot load.
+    </p>
+  </div>
+
+  <footer>cursor.svg · 32 × 32 px star with gold centre</footer>
+
+</body>
+</html>
