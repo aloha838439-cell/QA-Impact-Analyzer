@@ -2,23 +2,17 @@
  * C11 — Sidebar (Layout) tests
  *
  * The sidebar is rendered inside the Layout component
- * (src/components/Layout/Sidebar.tsx does NOT exist as a separate file —
- * the sidebar is the <aside> element inside Layout.tsx).
+ * (src/components/Layout/Sidebar.tsx).
  *
  * Navigation items defined in Layout.tsx:
- *   { to: '/dashboard', label: 'Dashboard',       description: 'Overview & stats'  }
- *   { to: '/analysis',  label: 'Impact Analysis', description: 'Analyze changes'    }
- *   { to: '/defects',   label: 'Defects',          description: 'Manage defects'     }
+ *   { to: '/dashboard', label: '대시보드',    description: '현황 및 통계'     }
+ *   { to: '/analysis',  label: '영향도 분석', description: '변경 영향도 분석' }
+ *   { to: '/defects',   label: '결함 관리',   description: '결함 데이터 관리' }
  *
  * Active link styling (when isActive === true via NavLink):
  *   'bg-indigo-600/20 text-indigo-400 border border-indigo-600/30'
  *
- * NOTE: The <aside> element in Layout.tsx does NOT currently have a
- * data-testid attribute. Add data-testid="sidebar" to the <aside> element
- * in Layout.tsx to satisfy the TDD plan requirement.
- *
- * Because Layout renders <Header /> (which also uses useAuthStore and
- * useLocation) and <Outlet />, both are mocked below.
+ * The <aside> element in Layout.tsx has data-testid="sidebar".
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -82,38 +76,32 @@ describe('C11 — Sidebar navigation', () => {
   });
 
   it('sidebar renders with data-testid="sidebar"', () => {
-    // NOTE: Add data-testid="sidebar" to the <aside> element in Layout.tsx.
-    // Until that attribute is added, this test uses the semantic <aside> role.
     renderLayout('/dashboard');
 
-    // Prefer data-testid once added; fall back to complementary role
-    const sidebar =
-      screen.queryByTestId('sidebar') ??
-      screen.getByRole('complementary'); // <aside> has implicit role="complementary"
-
+    const sidebar = screen.getByTestId('sidebar');
     expect(sidebar).toBeInTheDocument();
   });
 
-  it('sidebar contains a Dashboard navigation link', () => {
+  it('sidebar contains a Dashboard navigation link (대시보드)', () => {
     renderLayout('/dashboard');
 
-    const dashboardLink = screen.getByRole('link', { name: /dashboard/i });
+    const dashboardLink = screen.getByRole('link', { name: /대시보드/i });
     expect(dashboardLink).toBeInTheDocument();
     expect(dashboardLink).toHaveAttribute('href', '/dashboard');
   });
 
-  it('sidebar contains an Impact Analysis navigation link', () => {
+  it('sidebar contains an Impact Analysis navigation link (영향도 분석)', () => {
     renderLayout('/dashboard');
 
-    const analysisLink = screen.getByRole('link', { name: /impact analysis/i });
+    const analysisLink = screen.getByRole('link', { name: /영향도 분석/i });
     expect(analysisLink).toBeInTheDocument();
     expect(analysisLink).toHaveAttribute('href', '/analysis');
   });
 
-  it('sidebar contains a Defects navigation link', () => {
+  it('sidebar contains a Defects navigation link (결함 관리)', () => {
     renderLayout('/dashboard');
 
-    const defectsLink = screen.getByRole('link', { name: /defects/i });
+    const defectsLink = screen.getByRole('link', { name: /결함 관리/i });
     expect(defectsLink).toBeInTheDocument();
     expect(defectsLink).toHaveAttribute('href', '/defects');
   });
@@ -124,7 +112,7 @@ describe('C11 — Sidebar navigation', () => {
 
     // NavLink applies the active class string when isActive is true.
     // The active class includes 'bg-indigo-600/20' and 'text-indigo-400'.
-    const analysisLink = screen.getByRole('link', { name: /impact analysis/i });
+    const analysisLink = screen.getByRole('link', { name: /영향도 분석/i });
     expect(analysisLink.className).toContain('bg-indigo-600/20');
     expect(analysisLink.className).toContain('text-indigo-400');
   });
@@ -133,10 +121,17 @@ describe('C11 — Sidebar navigation', () => {
     renderLayout('/dashboard');
 
     // /analysis and /defects links should not carry active styles when on /dashboard
-    const analysisLink = screen.getByRole('link', { name: /impact analysis/i });
-    const defectsLink = screen.getByRole('link', { name: /defects/i });
+    const analysisLink = screen.getByRole('link', { name: /영향도 분석/i });
+    const defectsLink = screen.getByRole('link', { name: /결함 관리/i });
 
     expect(analysisLink.className).not.toContain('bg-indigo-600/20');
     expect(defectsLink.className).not.toContain('bg-indigo-600/20');
+  });
+
+  it('sidebar has logout button', () => {
+    renderLayout('/dashboard');
+
+    const logoutBtn = screen.getByTestId('logout-btn');
+    expect(logoutBtn).toBeInTheDocument();
   });
 });

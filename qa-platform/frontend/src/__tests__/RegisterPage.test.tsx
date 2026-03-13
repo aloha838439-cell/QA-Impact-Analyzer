@@ -2,11 +2,12 @@
  * C10 — RegisterPage tests (register variant)
  *
  * RegisterPage renders a registration form with:
- *   - Email input
- *   - Username input
- *   - Password input (with live strength indicator)
- *   - Confirm Password input
- *   - Submit button "Create Account"
+ *   - Email input       → data-testid="email-input"
+ *   - Username input    → data-testid="name-input"
+ *   - Password input    → data-testid="password-input" (with live strength indicator)
+ *   - Confirm Password  → data-testid="confirm-password-input"
+ *   - Submit button     → data-testid="register-btn" ("계정 만들기")
+ *   - Form error        → data-testid="error-message"
  *
  * Password strength logic (passwordStrength() function):
  *   Starts at 0, increments for each rule met:
@@ -14,20 +15,11 @@
  *     +1 if contains uppercase letter
  *     +1 if contains digit
  *     +1 if contains special character
- *   Display: "Password strength: {strengthLabels[strength - 1]}"
- *   strengthLabels = ['Weak', 'Fair', 'Good', 'Strong']
+ *   Display: "비밀번호 강도: {strengthLabels[strength - 1]}"
+ *   strengthLabels = ['약함', '보통', '좋음', '강함']
+ *   strength=0 → '너무 짧음'
  *
- * NOTE: The TDD plan specified Korean strength labels (약함/보통/강함), but the
- * actual RegisterPage implementation uses English labels:
- *   strength=1 → 'Weak'
- *   strength=2 → 'Fair'
- *   strength=3 → 'Good'
- *   strength=4 → 'Strong'
- * Tests are written to match the REAL implementation.
- *
- * On successful registration the component navigates to '/dashboard' (not '/login').
- *
- * NOTE: RegisterPage does NOT currently have data-testid attributes. Add them as needed.
+ * On successful registration the component navigates to '/login'.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -75,7 +67,6 @@ function renderRegisterPage() {
     <MemoryRouter initialEntries={['/register']}>
       <Routes>
         <Route path="/register" element={<RegisterPage />} />
-        <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
         <Route path="/login" element={<div data-testid="login-page">Login</div>} />
       </Routes>
     </MemoryRouter>,
@@ -88,107 +79,142 @@ describe('C10 — RegisterPage', () => {
     vi.clearAllMocks();
   });
 
+  it('form fields have correct data-testid attributes', () => {
+    renderRegisterPage();
+
+    expect(screen.getByTestId('email-input')).toBeInTheDocument();
+    expect(screen.getByTestId('name-input')).toBeInTheDocument();
+    expect(screen.getByTestId('password-input')).toBeInTheDocument();
+    expect(screen.getByTestId('confirm-password-input')).toBeInTheDocument();
+    expect(screen.getByTestId('register-btn')).toBeInTheDocument();
+  });
+
   // ---------- Password strength indicator tests --------------------------------
 
-  it('password with length < 8 (only 1 criterion met: none) shows "Weak" strength indicator', async () => {
+  it('password with length < 8 shows "너무 짧음" strength indicator', async () => {
     renderRegisterPage();
-    const passwordInput = screen.getByPlaceholderText(/at least 8 characters/i);
+    const passwordInput = screen.getByTestId('password-input');
 
-    // "abc" — length < 8, no uppercase, no digit, no special char → strength = 0
-    // The indicator only appears when password is non-empty.
-    // strength=0 means no rule met, display is "Too short" per the source:
-    //   {strength > 0 ? strengthLabels[strength - 1] : 'Too short'}
+    // "abc" — length < 8, no uppercase, no digit, no special char → strength = 0 → '너무 짧음'
     await userEvent.type(passwordInput, 'abc');
 
     await waitFor(() => {
-      expect(screen.getByText(/password strength:/i)).toBeInTheDocument();
-      expect(screen.getByText(/too short/i)).toBeInTheDocument();
+      expect(screen.getByTestId('password-strength-label')).toHaveTextContent('너무 짧음');
     });
   });
 
-  it('password meeting exactly 1 criterion (length >= 8 only) shows "Weak" strength indicator', async () => {
+  it('password meeting exactly 1 criterion (length >= 8 only) shows "약함" strength indicator', async () => {
     renderRegisterPage();
-    const passwordInput = screen.getByPlaceholderText(/at least 8 characters/i);
+    const passwordInput = screen.getByTestId('password-input');
 
-    // "abcdefgh" — length >= 8 (+1), no uppercase, no digit, no special → strength = 1 → "Weak"
+    // "abcdefgh" — length >= 8 (+1), no uppercase, no digit, no special → strength = 1 → "약함"
     await userEvent.type(passwordInput, 'abcdefgh');
 
     await waitFor(() => {
-      expect(screen.getByText(/password strength:.*weak/i)).toBeInTheDocument();
+      expect(screen.getByTestId('password-strength-label')).toHaveTextContent('약함');
     });
   });
 
-  it('password meeting 2 criteria shows "Fair" strength indicator', async () => {
+  it('password meeting 2 criteria shows "보통" strength indicator', async () => {
     renderRegisterPage();
-    const passwordInput = screen.getByPlaceholderText(/at least 8 characters/i);
+    const passwordInput = screen.getByTestId('password-input');
 
-    // "Abcdefgh" — length >= 8 (+1), uppercase (+1), no digit, no special → strength = 2 → "Fair"
+    // "Abcdefgh" — length >= 8 (+1), uppercase (+1), no digit, no special → strength = 2 → "보통"
     await userEvent.type(passwordInput, 'Abcdefgh');
 
     await waitFor(() => {
-      expect(screen.getByText(/password strength:.*fair/i)).toBeInTheDocument();
+      expect(screen.getByTestId('password-strength-label')).toHaveTextContent('보통');
     });
   });
 
-  it('password meeting 3 criteria shows "Good" strength indicator', async () => {
+  it('password meeting 3 criteria shows "좋음" strength indicator', async () => {
     renderRegisterPage();
-    const passwordInput = screen.getByPlaceholderText(/at least 8 characters/i);
+    const passwordInput = screen.getByTestId('password-input');
 
-    // "Abcdefg1" — length >= 8 (+1), uppercase (+1), digit (+1), no special → strength = 3 → "Good"
+    // "Abcdefg1" — length >= 8 (+1), uppercase (+1), digit (+1), no special → strength = 3 → "좋음"
     await userEvent.type(passwordInput, 'Abcdefg1');
 
     await waitFor(() => {
-      expect(screen.getByText(/password strength:.*good/i)).toBeInTheDocument();
+      expect(screen.getByTestId('password-strength-label')).toHaveTextContent('좋음');
     });
   });
 
-  it('password meeting all 4 criteria shows "Strong" strength indicator', async () => {
+  it('password meeting all 4 criteria shows "강함" strength indicator', async () => {
     renderRegisterPage();
-    const passwordInput = screen.getByPlaceholderText(/at least 8 characters/i);
+    const passwordInput = screen.getByTestId('password-input');
 
-    // "Abcdefg1!" — length >= 8 (+1), uppercase (+1), digit (+1), special (+1) → strength = 4 → "Strong"
+    // "Abcdefg1!" — length >= 8 (+1), uppercase (+1), digit (+1), special (+1) → strength = 4 → "강함"
     await userEvent.type(passwordInput, 'Abcdefg1!');
 
     await waitFor(() => {
-      expect(screen.getByText(/password strength:.*strong/i)).toBeInTheDocument();
+      expect(screen.getByTestId('password-strength-label')).toHaveTextContent('강함');
     });
   });
 
   // ---------- Validation error tests ------------------------------------------
 
-  it('submit with empty username shows "Username is required" error', async () => {
+  it('submit with empty username shows inline error', async () => {
     renderRegisterPage();
 
-    await userEvent.type(screen.getByPlaceholderText(/you@example\.com/i), 'user@example.com');
+    await userEvent.type(screen.getByTestId('email-input'), 'user@example.com');
     // Leave username blank
-    await userEvent.type(screen.getByPlaceholderText(/at least 8 characters/i), 'Password1!');
-    await userEvent.type(screen.getByPlaceholderText(/repeat your password/i), 'Password1!');
+    await userEvent.type(screen.getByTestId('password-input'), 'Password1!');
+    await userEvent.type(screen.getByTestId('confirm-password-input'), 'Password1!');
 
-    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    fireEvent.click(screen.getByTestId('register-btn'));
 
     await waitFor(() => {
-      expect(screen.getByText('Username is required')).toBeInTheDocument();
+      expect(screen.getByTestId('username-error')).toBeInTheDocument();
+      expect(screen.getByText('사용자 이름을 입력하세요')).toBeInTheDocument();
     });
   });
 
-  it('submit with empty email shows "Email is required" error', async () => {
+  it('submit with empty email shows inline error', async () => {
     renderRegisterPage();
 
     // Leave email blank; fill other fields correctly
-    await userEvent.type(screen.getByPlaceholderText(/johndoe/i), 'validuser');
-    await userEvent.type(screen.getByPlaceholderText(/at least 8 characters/i), 'Password1!');
-    await userEvent.type(screen.getByPlaceholderText(/repeat your password/i), 'Password1!');
+    await userEvent.type(screen.getByTestId('name-input'), 'validuser');
+    await userEvent.type(screen.getByTestId('password-input'), 'Password1!');
+    await userEvent.type(screen.getByTestId('confirm-password-input'), 'Password1!');
 
-    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    fireEvent.click(screen.getByTestId('register-btn'));
 
     await waitFor(() => {
-      expect(screen.getByText('Email is required')).toBeInTheDocument();
+      expect(screen.getByTestId('email-error')).toBeInTheDocument();
+      expect(screen.getByText('이메일을 입력하세요')).toBeInTheDocument();
+    });
+  });
+
+  it('submit with mismatched passwords shows inline error', async () => {
+    renderRegisterPage();
+
+    await userEvent.type(screen.getByTestId('email-input'), 'user@example.com');
+    await userEvent.type(screen.getByTestId('name-input'), 'validuser');
+    await userEvent.type(screen.getByTestId('password-input'), 'Password1!');
+    await userEvent.type(screen.getByTestId('confirm-password-input'), 'DifferentPass1!');
+
+    fireEvent.click(screen.getByTestId('register-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('confirm-password-error')).toBeInTheDocument();
+      expect(screen.getByText('비밀번호가 일치하지 않습니다')).toBeInTheDocument();
+    });
+  });
+
+  it('error messages have role=alert for accessibility', async () => {
+    renderRegisterPage();
+
+    fireEvent.click(screen.getByTestId('register-btn'));
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.length).toBeGreaterThan(0);
     });
   });
 
   // ---------- Successful registration test ------------------------------------
 
-  it('successful registration navigates to /dashboard', async () => {
+  it('successful registration navigates to /login', async () => {
     const mockRegisterResponse = {
       access_token: 'mock.token.here',
       token_type: 'bearer',
@@ -205,15 +231,15 @@ describe('C10 — RegisterPage', () => {
 
     renderRegisterPage();
 
-    await userEvent.type(screen.getByPlaceholderText(/you@example\.com/i), 'newuser@example.com');
-    await userEvent.type(screen.getByPlaceholderText(/johndoe/i), 'newuser');
-    await userEvent.type(screen.getByPlaceholderText(/at least 8 characters/i), 'Password1!');
-    await userEvent.type(screen.getByPlaceholderText(/repeat your password/i), 'Password1!');
+    await userEvent.type(screen.getByTestId('email-input'), 'newuser@example.com');
+    await userEvent.type(screen.getByTestId('name-input'), 'newuser');
+    await userEvent.type(screen.getByTestId('password-input'), 'Password1!');
+    await userEvent.type(screen.getByTestId('confirm-password-input'), 'Password1!');
 
-    fireEvent.click(screen.getByRole('button', { name: /create account/i }));
+    fireEvent.click(screen.getByTestId('register-btn'));
 
     await waitFor(() => {
-      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+      expect(screen.getByTestId('login-page')).toBeInTheDocument();
     });
   });
 });

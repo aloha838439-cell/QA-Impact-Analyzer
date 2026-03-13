@@ -20,9 +20,9 @@ export default function LoginPage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.email) newErrors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email format';
-    if (!formData.password) newErrors.password = 'Password is required';
+    if (!formData.email) newErrors.email = '이메일을 입력하세요';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = '올바른 이메일 형식이 아닙니다';
+    if (!formData.password) newErrors.password = '비밀번호를 입력하세요';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -32,10 +32,11 @@ export default function LoginPage() {
     if (!validate()) return;
 
     setIsLoading(true);
+    setErrors({});
     try {
       const response = await authService.login(formData);
       login(response.access_token, response.user);
-      toast.success(`Welcome back, ${response.user.username}!`);
+      toast.success(`환영합니다, ${response.user.username}님!`);
       navigate(from, { replace: true });
     } catch (err: unknown) {
       const message =
@@ -62,7 +63,7 @@ export default function LoginPage() {
 
         {/* Form card */}
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {/* Email */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">
@@ -72,6 +73,8 @@ export default function LoginPage() {
                 id="email"
                 type="email"
                 data-testid="email-input"
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-invalid={!!errors.email}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className={`w-full bg-slate-700 border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
@@ -82,7 +85,9 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-xs text-red-400 mt-1">{errors.email}</p>
+                <p id="email-error" role="alert" data-testid="email-error" className="text-xs text-red-400 mt-1">
+                  {errors.email}
+                </p>
               )}
             </div>
 
@@ -96,6 +101,8 @@ export default function LoginPage() {
                   id="password"
                   type={showPassword ? 'text' : 'password'}
                   data-testid="password-input"
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                  aria-invalid={!!errors.password}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className={`w-full bg-slate-700 border rounded-lg px-3 py-2.5 pr-10 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
@@ -108,19 +115,27 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-400 mt-1">{errors.password}</p>
+                <p id="password-error" role="alert" data-testid="password-error" className="text-xs text-red-400 mt-1">
+                  {errors.password}
+                </p>
               )}
             </div>
 
             {/* API error message */}
             {errors.form && (
-              <p data-testid="error-message" className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2">
+              <p
+                role="alert"
+                aria-live="polite"
+                data-testid="error-message"
+                className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2"
+              >
                 {errors.form}
               </p>
             )}
@@ -149,8 +164,15 @@ export default function LoginPage() {
             <p className="text-xs text-slate-300">이메일: <span className="font-mono text-indigo-300">admin@qa.com</span></p>
             <p className="text-xs text-slate-300">비밀번호: <span className="font-mono text-indigo-300">admin1234</span></p>
           </div>
-        </div>
 
+          {/* Register link */}
+          <p className="text-center text-sm text-slate-400 mt-4">
+            계정이 없으신가요?{' '}
+            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
+              회원가입
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

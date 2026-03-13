@@ -2,22 +2,20 @@
  * C10 — LoginPage tests
  *
  * LoginPage renders a login form with:
- *   - Email input (label: "Email address", placeholder: "you@example.com")
- *   - Password input (label: "Password", placeholder: "Your password")
- *   - Submit button with text "Sign in"
+ *   - Email input (label: "이메일 주소", placeholder: "you@example.com")
+ *   - Password input (label: "비밀번호", placeholder: "비밀번호를 입력하세요")
+ *   - Submit button with text "로그인"
  *
  * Validation (client-side, fires before any API call):
- *   - Empty email  → 'Email is required'
- *   - Bad format   → 'Invalid email format'
- *   - Empty pass   → 'Password is required'
+ *   - Empty email  → '이메일을 입력하세요'
+ *   - Bad format   → '올바른 이메일 형식이 아닙니다'
+ *   - Empty pass   → '비밀번호를 입력하세요'
  *
- * NOTE: LoginPage does NOT currently have data-testid attributes on its inputs
- * or submit button. The tests below query by label text / role as a fallback.
- * To satisfy the data-testid contract described in the TDD plan, add the
- * following attributes to LoginPage.tsx:
+ * data-testid attributes on LoginPage.tsx:
  *   - email input    → data-testid="email-input"
  *   - password input → data-testid="password-input"
  *   - submit button  → data-testid="login-btn"
+ *   - error message  → data-testid="error-message"
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -79,60 +77,75 @@ describe('C10 — LoginPage', () => {
 
   it('submit button is present and renders', () => {
     renderLoginPage();
-    // NOTE: add data-testid="login-btn" to the submit button in LoginPage.tsx
-    const btn = screen.getByRole('button', { name: /sign in/i });
+    const btn = screen.getByTestId('login-btn');
     expect(btn).toBeInTheDocument();
   });
 
-  it('form fields have correct label associations (email-input, password-input, login-btn)', () => {
+  it('form fields have correct data-testid attributes (email-input, password-input, login-btn)', () => {
     renderLoginPage();
 
-    // NOTE: add data-testid="email-input"    to the email <input> in LoginPage.tsx
-    // NOTE: add data-testid="password-input" to the password <input> in LoginPage.tsx
-    // NOTE: add data-testid="login-btn"      to the submit <button> in LoginPage.tsx
-
-    // Querying by label is the accessible / RTL-idiomatic equivalent
-    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/^password$/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByTestId('email-input')).toBeInTheDocument();
+    expect(screen.getByTestId('password-input')).toBeInTheDocument();
+    expect(screen.getByTestId('login-btn')).toBeInTheDocument();
   });
 
-  it('submit with empty email shows "Email is required" error message', async () => {
+  it('form fields have correct label associations', () => {
+    renderLoginPage();
+
+    expect(screen.getByLabelText(/이메일 주소/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/^비밀번호$/i)).toBeInTheDocument();
+  });
+
+  it('submit with empty email shows inline error message', async () => {
     renderLoginPage();
 
     // Leave email blank, fill password so only email errors
-    await userEvent.type(screen.getByLabelText(/^password$/i), 'anypassword');
+    await userEvent.type(screen.getByTestId('password-input'), 'anypassword');
 
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fireEvent.click(screen.getByTestId('login-btn'));
 
     await waitFor(() => {
-      expect(screen.getByText('Email is required')).toBeInTheDocument();
+      expect(screen.getByTestId('email-error')).toBeInTheDocument();
+      expect(screen.getByText('이메일을 입력하세요')).toBeInTheDocument();
     });
   });
 
-  it('submit with invalid email format shows "Invalid email format" error', async () => {
+  it('submit with invalid email format shows inline error message', async () => {
     renderLoginPage();
 
-    await userEvent.type(screen.getByLabelText(/email address/i), 'not-an-email');
-    await userEvent.type(screen.getByLabelText(/^password$/i), 'anypassword');
+    await userEvent.type(screen.getByTestId('email-input'), 'not-an-email');
+    await userEvent.type(screen.getByTestId('password-input'), 'anypassword');
 
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fireEvent.click(screen.getByTestId('login-btn'));
 
     await waitFor(() => {
-      expect(screen.getByText('Invalid email format')).toBeInTheDocument();
+      expect(screen.getByTestId('email-error')).toBeInTheDocument();
+      expect(screen.getByText('올바른 이메일 형식이 아닙니다')).toBeInTheDocument();
     });
   });
 
-  it('submit with empty password shows "Password is required" error message', async () => {
+  it('submit with empty password shows inline error message', async () => {
     renderLoginPage();
 
-    await userEvent.type(screen.getByLabelText(/email address/i), 'user@example.com');
+    await userEvent.type(screen.getByTestId('email-input'), 'user@example.com');
     // Leave password blank
 
-    fireEvent.click(screen.getByRole('button', { name: /sign in/i }));
+    fireEvent.click(screen.getByTestId('login-btn'));
 
     await waitFor(() => {
-      expect(screen.getByText('Password is required')).toBeInTheDocument();
+      expect(screen.getByTestId('password-error')).toBeInTheDocument();
+      expect(screen.getByText('비밀번호를 입력하세요')).toBeInTheDocument();
+    });
+  });
+
+  it('error message has role=alert for accessibility', async () => {
+    renderLoginPage();
+
+    fireEvent.click(screen.getByTestId('login-btn'));
+
+    await waitFor(() => {
+      const alerts = screen.getAllByRole('alert');
+      expect(alerts.length).toBeGreaterThan(0);
     });
   });
 });

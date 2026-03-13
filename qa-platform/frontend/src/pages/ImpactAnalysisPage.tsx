@@ -30,7 +30,7 @@ export default function ImpactAnalysisPage() {
 
   const handleAnalyze = async () => {
     if (!store.currentQuery.trim()) {
-      toast.error('Please enter a change description');
+      toast.error('변경 내용을 입력하세요');
       return;
     }
 
@@ -55,7 +55,7 @@ export default function ImpactAnalysisPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Failed to find similar defects';
+        '유사 결함 조회에 실패했습니다';
       store.setErrorSimilar(msg);
       toast.error(msg);
     } finally {
@@ -76,7 +76,7 @@ export default function ImpactAnalysisPage() {
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Failed to analyze impact';
+        '영향도 분석에 실패했습니다';
       store.setErrorImpact(msg);
       toast.error(msg);
     } finally {
@@ -95,11 +95,11 @@ export default function ImpactAnalysisPage() {
         num_cases: numTestCases,
       });
       store.setTestCases(testCases);
-      toast.success(`Analysis complete! Found ${similarDefects.length} similar defects and generated ${testCases.length} test cases.`);
+      toast.success(`분석 완료! 유사 결함 ${similarDefects.length}건, 테스트케이스 ${testCases.length}개 생성`);
     } catch (err: unknown) {
       const msg =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Failed to generate test cases';
+        '테스트케이스 생성에 실패했습니다';
       store.setErrorTestCases(msg);
       toast.error(msg);
     } finally {
@@ -123,6 +123,7 @@ export default function ImpactAnalysisPage() {
         {/* Textarea */}
         <div className="relative mb-4">
           <textarea
+            data-testid="analysis-query-input"
             value={store.currentQuery}
             onChange={(e) => store.setQuery(e.target.value)}
             placeholder="구현하려는 소프트웨어 변경 또는 기능을 설명하세요... 예: '로그인 페이지 UI 개편 및 소셜 로그인 추가'"
@@ -196,6 +197,7 @@ export default function ImpactAnalysisPage() {
 
           {/* Analyze button */}
           <button
+            data-testid="analyze-btn"
             onClick={handleAnalyze}
             disabled={isAnyLoading || !store.currentQuery.trim()}
             className={clsx(

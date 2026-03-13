@@ -38,7 +38,7 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout();
-    toast.success('Logged out successfully');
+    toast.success('로그아웃 되었습니다');
     navigate('/login');
   };
 

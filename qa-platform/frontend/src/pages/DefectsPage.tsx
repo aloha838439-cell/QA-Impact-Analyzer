@@ -52,7 +52,7 @@ export default function DefectsPage() {
   const uploadMutation = useMutation({
     mutationFn: (file: File) => defectService.uploadCSV(file),
     onSuccess: (result) => {
-      toast.success(`${result.message}. Skipped: ${result.skipped}`);
+      toast.success(`${result.message}. 중복 건너뜀: ${result.skipped}`);
       queryClient.invalidateQueries({ queryKey: ['defects'] });
       queryClient.invalidateQueries({ queryKey: ['defect-stats'] });
     },
@@ -105,7 +105,7 @@ export default function DefectsPage() {
     if (file && file.name.endsWith('.csv')) {
       uploadMutation.mutate(file);
     } else {
-      toast.error('Please drop a CSV file');
+      toast.error('CSV 파일만 업로드 가능합니다');
     }
   };
 
