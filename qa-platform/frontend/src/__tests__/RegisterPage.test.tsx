@@ -185,6 +185,22 @@ describe('C10 — RegisterPage', () => {
     });
   });
 
+  it('submit with username shorter than 3 chars shows inline error', async () => {
+    renderRegisterPage();
+
+    await userEvent.type(screen.getByTestId('email-input'), 'user@example.com');
+    await userEvent.type(screen.getByTestId('name-input'), 'ab');  // 2 chars — too short
+    await userEvent.type(screen.getByTestId('password-input'), 'Password1!');
+    await userEvent.type(screen.getByTestId('confirm-password-input'), 'Password1!');
+
+    fireEvent.click(screen.getByTestId('register-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('username-error')).toBeInTheDocument();
+      expect(screen.getByText('사용자 이름은 3자 이상이어야 합니다')).toBeInTheDocument();
+    });
+  });
+
   it('submit with mismatched passwords shows inline error', async () => {
     renderRegisterPage();
 

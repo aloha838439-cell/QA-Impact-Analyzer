@@ -21,8 +21,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import LoginPage from '../pages/LoginPage';
+import { authService } from '../services/authService';
+import { useAuthStore } from '../store/authStore';
 
 // ---- Mock dependencies --------------------------------------------------------
 
@@ -64,7 +66,10 @@ vi.mock('../components/UI/LoadingSpinner', () => ({
 function renderLoginPage() {
   render(
     <MemoryRouter initialEntries={['/login']}>
-      <LoginPage />
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/dashboard" element={<div data-testid="dashboard-page">Dashboard</div>} />
+      </Routes>
     </MemoryRouter>,
   );
 }
@@ -147,5 +152,68 @@ describe('C10 — LoginPage', () => {
       const alerts = screen.getAllByRole('alert');
       expect(alerts.length).toBeGreaterThan(0);
     });
+  });
+
+  // ---------- W-07: API 플로우 테스트 (성공/실패) ----------------------------
+
+  it('valid credentials → API called → navigate to /dashboard', async () => {
+    vi.mocked(authService.login).mockResolvedValueOnce({
+      access_token: 'test-token',
+      token_type: 'bearer',
+      user: { id: 1, email: 'admin@qa.com', username: 'admin', is_active: true, is_admin: true },
+    });
+
+    renderLoginPage();
+
+    await userEvent.type(screen.getByTestId('email-input'), 'admin@qa.com');
+    await userEvent.type(screen.getByTestId('password-input'), 'admin1234');
+    fireEvent.click(screen.getByTestId('login-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('dashboard-page')).toBeInTheDocument();
+    });
+    expect(authService.login).toHaveBeenCalledWith({
+      email: 'admin@qa.com',
+      password: 'admin1234',
+    });
+  });
+
+  it('API failure (401) → inline error-message shown', async () => {
+    vi.mocked(authService.login).mockRejectedValueOnce({
+      response: { data: { detail: '이메일 또는 비밀번호가 올바르지 않습니다.' } },
+    });
+
+    renderLoginPage();
+
+    await userEvent.type(screen.getByTestId('email-input'), 'admin@qa.com');
+    await userEvent.type(screen.getByTestId('password-input'), 'wrongpassword');
+    fireEvent.click(screen.getByTestId('login-btn'));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('error-message')).toBeInTheDocument();
+      expect(screen.getByTestId('error-message')).toHaveTextContent('이메일 또는 비밀번호');
+    });
+  });
+
+  it('loading state — login-btn is disabled while request is pending', async () => {
+    // Create a promise that never resolves to simulate "pending" state
+    let resolveFn!: (v: unknown) => void;
+    vi.mocked(authService.login).mockReturnValueOnce(
+      new Promise((resolve) => { resolveFn = resolve; }) as ReturnType<typeof authService.login>
+    );
+
+    renderLoginPage();
+
+    await userEvent.type(screen.getByTestId('email-input'), 'admin@qa.com');
+    await userEvent.type(screen.getByTestId('password-input'), 'admin1234');
+    fireEvent.click(screen.getByTestId('login-btn'));
+
+    // Button should be disabled during loading
+    await waitFor(() => {
+      expect(screen.getByTestId('login-btn')).toBeDisabled();
+    });
+
+    // Cleanup: resolve the promise to avoid open handles
+    resolveFn({ access_token: 'tok', token_type: 'bearer', user: { id: 1, email: 'admin@qa.com', username: 'admin', is_active: true, is_admin: false } });
   });
 });
