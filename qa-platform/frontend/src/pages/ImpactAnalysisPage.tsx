@@ -118,14 +118,14 @@ export default function ImpactAnalysisPage() {
     <div className="p-6 space-y-6">
       {/* Input Section */}
       <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
-        <h2 className="text-base font-semibold text-slate-200 mb-4">Describe Your Change</h2>
+        <h2 className="text-base font-semibold text-slate-200 mb-4">변경 내용 입력</h2>
 
         {/* Textarea */}
         <div className="relative mb-4">
           <textarea
             value={store.currentQuery}
             onChange={(e) => store.setQuery(e.target.value)}
-            placeholder="Describe the software change or feature you're implementing... e.g., '로그인 페이지 UI 개편 및 소셜 로그인 추가 (Login page UI redesign and adding social login)'"
+            placeholder="구현하려는 소프트웨어 변경 또는 기능을 설명하세요... 예: '로그인 페이지 UI 개편 및 소셜 로그인 추가'"
             className="w-full bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 rounded-lg px-4 py-3 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors resize-none"
             rows={4}
             disabled={isAnyLoading}
@@ -143,7 +143,7 @@ export default function ImpactAnalysisPage() {
         {/* Module selector */}
         <div className="mb-4">
           <label className="block text-xs font-medium text-slate-400 mb-2">
-            Filter by Module (optional)
+            모듈 선택 (선택사항)
           </label>
           <div className="flex flex-wrap gap-2">
             {MODULES.map((module) => (
@@ -168,7 +168,7 @@ export default function ImpactAnalysisPage() {
         <div className="flex items-center gap-4">
           {/* Num test cases */}
           <div className="flex items-center gap-2">
-            <label className="text-xs text-slate-400">Test cases:</label>
+            <label className="text-xs text-slate-400">테스트케이스 수:</label>
             <select
               value={numTestCases}
               onChange={(e) => setNumTestCases(Number(e.target.value))}
@@ -190,7 +190,7 @@ export default function ImpactAnalysisPage() {
               disabled={isAnyLoading}
               className="text-xs text-slate-400 hover:text-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-700 transition-colors"
             >
-              Clear
+              초기화
             </button>
           )}
 
@@ -206,7 +206,7 @@ export default function ImpactAnalysisPage() {
             )}
           >
             <Zap size={16} />
-            {isAnyLoading ? 'Analyzing...' : 'Analyze'}
+            {isAnyLoading ? '분석 중...' : '분석 시작'}
           </button>
         </div>
       </div>
@@ -218,7 +218,7 @@ export default function ImpactAnalysisPage() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-700">
               <Bug size={16} className="text-red-400" />
-              <h3 className="text-sm font-semibold text-slate-200">Similar Defects</h3>
+              <h3 className="text-sm font-semibold text-slate-200">유사 결함</h3>
               {store.similarDefects.length > 0 && (
                 <span className="ml-auto text-xs bg-red-500/20 text-red-400 px-2 py-0.5 rounded-full border border-red-500/30">
                   {store.similarDefects.length}
@@ -238,7 +238,7 @@ export default function ImpactAnalysisPage() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-700">
               <Zap size={16} className="text-yellow-400" />
-              <h3 className="text-sm font-semibold text-slate-200">Impact Analysis</h3>
+              <h3 className="text-sm font-semibold text-slate-200">영향도 분석</h3>
               {store.impactResult && (
                 <span className={clsx(
                   'ml-auto text-xs px-2 py-0.5 rounded-full border font-semibold',
@@ -264,7 +264,7 @@ export default function ImpactAnalysisPage() {
           <div className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden">
             <div className="flex items-center gap-2 px-5 py-4 border-b border-slate-700">
               <FlaskConical size={16} className="text-indigo-400" />
-              <h3 className="text-sm font-semibold text-slate-200">Recommended Tests</h3>
+              <h3 className="text-sm font-semibold text-slate-200">추천 테스트케이스</h3>
               {store.testCases.length > 0 && (
                 <span className="ml-auto text-xs bg-indigo-500/20 text-indigo-400 px-2 py-0.5 rounded-full border border-indigo-500/30">
                   {store.testCases.length}
@@ -288,10 +288,10 @@ export default function ImpactAnalysisPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-slate-800 rounded-2xl mb-4">
             <Zap size={28} className="text-indigo-400" />
           </div>
-          <h3 className="text-lg font-semibold text-slate-300 mb-2">Start Impact Analysis</h3>
+          <h3 className="text-lg font-semibold text-slate-300 mb-2">영향도 분석 시작</h3>
           <p className="text-sm text-slate-500 max-w-md mx-auto">
-            Describe your change or feature above and click Analyze to find similar defects,
-            calculate impact score, and get AI-recommended test cases.
+            위에 변경 내용을 입력하고 '분석 시작'을 클릭하면<br/>
+            유사 결함 조회 → 영향도 점수 계산 → 테스트케이스 자동 추천이 진행됩니다.
           </p>
         </div>
       )}

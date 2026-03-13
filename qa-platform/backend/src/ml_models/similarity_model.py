@@ -1,70 +1,50 @@
+"""
+고정 차원 해시 기반 텍스트 인코딩 (sentence-transformers 없이 동작)
+- 512차원 고정 벡터 → 모든 텍스트가 동일한 차원으로 인코딩됨
+- 어휘 사전 불필요 → encode_single 호출마다 일관된 차원 보장
+"""
+import re
 import numpy as np
-from typing import List, Optional, Tuple
-from sentence_transformers import SentenceTransformer
-from sklearn.metrics.pairwise import cosine_similarity
-import threading
-import logging
+from typing import List, Tuple
 
-logger = logging.getLogger(__name__)
-
-_model_lock = threading.Lock()
-_model_instance: Optional[SentenceTransformer] = None
+EMBEDDING_DIM = 512
 
 
-def get_model(model_name: str = "paraphrase-multilingual-MiniLM-L12-v2") -> SentenceTransformer:
-    """Get or create the singleton SentenceTransformer model instance."""
-    global _model_instance
-    if _model_instance is None:
-        with _model_lock:
-            if _model_instance is None:
-                logger.info(f"Loading sentence transformer model: {model_name}")
-                _model_instance = SentenceTransformer(model_name)
-                logger.info("Model loaded successfully")
-    return _model_instance
+def _hash_encode(text: str, dim: int = EMBEDDING_DIM) -> np.ndarray:
+    """고정 dim 해시 벡터: 단어 + 바이그램 → 버킷 인덱스로 누산."""
+    vec = np.zeros(dim, dtype=np.float32)
+    text_lower = text.lower()
+    words = re.findall(r'\w+', text_lower)
+    tokens = words + [f"{words[i]}_{words[i+1]}" for i in range(len(words) - 1)]
+    for token in tokens:
+        idx = abs(hash(token)) % dim
+        vec[idx] += 1.0
+    norm = np.linalg.norm(vec)
+    if norm > 0:
+        vec /= norm
+    return vec
+
+
+def _cosine_sim(a: np.ndarray, b: np.ndarray) -> np.ndarray:
+    dot = a @ b.T
+    na = np.linalg.norm(a, axis=1, keepdims=True)
+    nb = np.linalg.norm(b, axis=1, keepdims=True)
+    denom = na @ nb.T
+    return dot / np.where(denom == 0, 1e-9, denom)
 
 
 class SimilarityModel:
-    """Wrapper around SentenceTransformer for defect similarity computation."""
-
-    def __init__(self, model_name: str = "paraphrase-multilingual-MiniLM-L12-v2"):
+    def __init__(self, model_name: str = "hash512"):
         self.model_name = model_name
-        self._model: Optional[SentenceTransformer] = None
-
-    @property
-    def model(self) -> SentenceTransformer:
-        if self._model is None:
-            self._model = get_model(self.model_name)
-        return self._model
+        self.dim = EMBEDDING_DIM
 
     def encode(self, texts: List[str]) -> np.ndarray:
-        """Encode a list of texts into embeddings.
-
-        Args:
-            texts: List of text strings to encode
-
-        Returns:
-            numpy array of shape (n_texts, embedding_dim)
-        """
         if not texts:
             return np.array([])
-
-        # Normalize texts
-        normalized = [str(t).strip() for t in texts if t]
-
-        embeddings = self.model.encode(
-            normalized,
-            batch_size=32,
-            show_progress_bar=False,
-            normalize_embeddings=True,  # L2 normalize for cosine similarity
-        )
-        return embeddings
+        return np.stack([_hash_encode(str(t)) for t in texts])
 
     def encode_single(self, text: str) -> List[float]:
-        """Encode a single text and return as list of floats for JSON storage."""
-        embedding = self.encode([text])
-        if len(embedding) == 0:
-            return []
-        return embedding[0].tolist()
+        return _hash_encode(str(text)).tolist()
 
     def find_similar(
         self,
@@ -73,51 +53,47 @@ class SimilarityModel:
         top_k: int = 10,
         threshold: float = 0.0,
     ) -> List[Tuple[int, float]]:
-        """Find the most similar candidates to the query.
-
-        Args:
-            query_embedding: Query embedding as list of floats
-            candidate_embeddings: List of candidate embeddings
-            top_k: Number of top results to return
-            threshold: Minimum similarity score threshold
-
-        Returns:
-            List of (index, score) tuples sorted by score descending
-        """
         if not candidate_embeddings or not query_embedding:
             return []
 
-        query_vec = np.array(query_embedding).reshape(1, -1)
-        candidate_matrix = np.array(candidate_embeddings)
+        q = np.array(query_embedding, dtype=np.float32).reshape(1, -1)
 
-        # Compute cosine similarities
-        scores = cosine_similarity(query_vec, candidate_matrix)[0]
+        # 차원이 다른 임베딩은 길이를 맞춰 처리
+        fixed = []
+        for emb in candidate_embeddings:
+            arr = np.array(emb, dtype=np.float32)
+            if len(arr) < self.dim:
+                arr = np.pad(arr, (0, self.dim - len(arr)))
+            elif len(arr) > self.dim:
+                arr = arr[:self.dim]
+            fixed.append(arr)
 
-        # Get sorted indices
-        sorted_indices = np.argsort(scores)[::-1]
+        candidates = np.stack(fixed)
 
-        results = []
-        for idx in sorted_indices[:top_k]:
-            score = float(scores[idx])
-            if score >= threshold:
-                results.append((int(idx), score))
+        if q.shape[1] != self.dim:
+            q_fixed = np.zeros((1, self.dim), dtype=np.float32)
+            l = min(q.shape[1], self.dim)
+            q_fixed[0, :l] = q[0, :l]
+            q = q_fixed
 
-        return results
+        scores = _cosine_sim(q, candidates)[0]
+        sorted_idx = np.argsort(scores)[::-1]
+
+        return [
+            (int(i), float(scores[i]))
+            for i in sorted_idx[:top_k]
+            if float(scores[i]) >= threshold
+        ]
 
     def batch_compute_similarity(
-        self,
-        queries: List[str],
-        candidates: List[str],
+        self, queries: List[str], candidates: List[str]
     ) -> np.ndarray:
-        """Compute pairwise similarity matrix between queries and candidates.
-
-        Returns:
-            Matrix of shape (n_queries, n_candidates)
-        """
-        query_embeddings = self.encode(queries)
-        candidate_embeddings = self.encode(candidates)
-
-        if len(query_embeddings) == 0 or len(candidate_embeddings) == 0:
+        if not queries or not candidates:
             return np.array([])
+        q_emb = self.encode(queries)
+        c_emb = self.encode(candidates)
+        return _cosine_sim(q_emb, c_emb)
 
-        return cosine_similarity(query_embeddings, candidate_embeddings)
+
+def get_model(model_name: str = "hash512") -> SimilarityModel:
+    return SimilarityModel(model_name)

@@ -14,6 +14,7 @@ import {
   Filter,
   X,
   ChevronDown,
+  Trash2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
@@ -71,8 +72,25 @@ export default function DefectsPage() {
       queryClient.invalidateQueries({ queryKey: ['defects'] });
       queryClient.invalidateQueries({ queryKey: ['defect-stats'] });
     },
-    onError: () => toast.error('Seeding failed'),
+    onError: () => toast.error('시드 데이터 주입 실패'),
   });
+
+  // Delete all mutation
+  const deleteAllMutation = useMutation({
+    mutationFn: () => defectService.deleteAll(),
+    onSuccess: (result) => {
+      toast.success(result.message);
+      queryClient.invalidateQueries({ queryKey: ['defects'] });
+      queryClient.invalidateQueries({ queryKey: ['defect-stats'] });
+    },
+    onError: () => toast.error('삭제 실패'),
+  });
+
+  const handleDeleteAll = () => {
+    if (window.confirm('전체 결함 데이터를 모두 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) {
+      deleteAllMutation.mutate();
+    }
+  };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -97,21 +115,21 @@ export default function DefectsPage() {
       {stats && (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p className="text-xs text-slate-400">Total Defects</p>
+            <p className="text-xs text-slate-400">전체 결함</p>
             <p className="text-2xl font-bold text-slate-200 mt-1">{stats.total}</p>
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p className="text-xs text-slate-400">With Embeddings</p>
+            <p className="text-xs text-slate-400">임베딩 보유</p>
             <p className="text-2xl font-bold text-indigo-400 mt-1">{stats.with_embeddings}</p>
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p className="text-xs text-slate-400">Critical / High</p>
+            <p className="text-xs text-slate-400">심각 / 높음</p>
             <p className="text-2xl font-bold text-red-400 mt-1">
               {(stats.severity_distribution?.Critical || 0) + (stats.severity_distribution?.High || 0)}
             </p>
           </div>
           <div className="bg-slate-800 border border-slate-700 rounded-xl p-4">
-            <p className="text-xs text-slate-400">Open Issues</p>
+            <p className="text-xs text-slate-400">미해결 건수</p>
             <p className="text-2xl font-bold text-yellow-400 mt-1">
               {stats.status_distribution?.Open || 0}
             </p>
@@ -145,16 +163,16 @@ export default function DefectsPage() {
                 <Upload size={20} className="text-slate-400" />
               </div>
               <div>
-                <p className="text-sm text-slate-300">Drop CSV file here or</p>
+                <p className="text-sm text-slate-300">CSV 파일을 드래그하거나</p>
                 <button
                   onClick={() => fileInputRef.current?.click()}
                   className="text-sm text-indigo-400 hover:text-indigo-300 font-medium"
                 >
-                  browse to upload
+                  파일 선택해서 업로드
                 </button>
               </div>
               <p className="text-xs text-slate-500">
-                Columns: title, description, severity, module, status, reporter, related_features
+                필수 컬럼: title, description, severity, module, status, reporter, related_features
               </p>
             </>
           )}
@@ -168,7 +186,7 @@ export default function DefectsPage() {
           <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
           <input
             type="text"
-            placeholder="Search defects..."
+            placeholder="결함 검색..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-slate-800 border border-slate-700 text-slate-200 placeholder-slate-500 rounded-lg pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
@@ -188,7 +206,7 @@ export default function DefectsPage() {
             onChange={(e) => setSeverityFilter(e.target.value as Severity | '')}
             className="bg-slate-800 border border-slate-700 text-slate-300 rounded-lg pl-8 pr-8 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none"
           >
-            <option value="">All Severities</option>
+            <option value="">전체 심각도</option>
             {SEVERITY_OPTIONS.filter(Boolean).map((s) => (
               <option key={s} value={s}>{s}</option>
             ))}
@@ -199,7 +217,7 @@ export default function DefectsPage() {
         {/* Module filter */}
         <input
           type="text"
-          placeholder="Filter by module..."
+          placeholder="모듈 필터..."
           value={moduleFilter}
           onChange={(e) => setModuleFilter(e.target.value)}
           className="bg-slate-800 border border-slate-700 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 w-40"
@@ -221,7 +239,17 @@ export default function DefectsPage() {
           className="flex items-center gap-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors disabled:opacity-50"
         >
           {seedMutation.isPending ? <LoadingSpinner size="sm" /> : <Database size={15} />}
-          Seed Demo Data
+          더미 데이터 주입
+        </button>
+
+        {/* Delete all button */}
+        <button
+          onClick={handleDeleteAll}
+          disabled={deleteAllMutation.isPending || defects.length === 0}
+          className="flex items-center gap-2 px-3 py-2 bg-red-900/30 hover:bg-red-900/50 text-red-400 border border-red-800/40 rounded-lg text-sm transition-colors disabled:opacity-40"
+        >
+          {deleteAllMutation.isPending ? <LoadingSpinner size="sm" /> : <Trash2 size={15} />}
+          전체 삭제
         </button>
       </div>
 
@@ -230,9 +258,9 @@ export default function DefectsPage() {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
           <div className="flex items-center gap-2">
             <Bug size={16} className="text-red-400" />
-            <h3 className="text-sm font-semibold text-slate-200">Defects</h3>
+            <h3 className="text-sm font-semibold text-slate-200">결함 목록</h3>
           </div>
-          <span className="text-xs text-slate-500">{defects.length} records</span>
+          <span className="text-xs text-slate-500">{defects.length}건</span>
         </div>
 
         {isLoading ? (
@@ -248,8 +276,8 @@ export default function DefectsPage() {
         ) : defects.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 gap-3">
             <Bug size={32} className="text-slate-600" />
-            <p className="text-slate-400 text-sm">No defects found</p>
-            <p className="text-slate-500 text-xs">Upload a CSV or seed demo data to get started</p>
+            <p className="text-slate-400 text-sm">결함 데이터가 없습니다</p>
+            <p className="text-slate-500 text-xs">CSV를 업로드하거나 더미 데이터를 주입하세요</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -257,22 +285,22 @@ export default function DefectsPage() {
               <thead>
                 <tr className="border-b border-slate-700">
                   <th className="text-left px-6 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Title
+                    제목
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Severity
+                    심각도
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Module
+                    모듈
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider">
-                    Status
+                    상태
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider hidden lg:table-cell">
-                    Reporter
+                    보고자
                   </th>
                   <th className="text-left px-4 py-3 text-xs font-medium text-slate-400 uppercase tracking-wider hidden xl:table-cell">
-                    Created
+                    등록일
                   </th>
                 </tr>
               </thead>

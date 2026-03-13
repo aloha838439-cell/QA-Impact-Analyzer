@@ -76,40 +76,40 @@ export default function DashboardPage() {
       {/* Welcome header */}
       <div>
         <h2 className="text-xl font-bold text-slate-200">
-          Welcome back, {user?.username} 👋
+          안녕하세요, {user?.username}님 👋
         </h2>
         <p className="text-sm text-slate-400 mt-1">
-          Here's an overview of your QA analysis activity
+          QA 분석 활동 현황을 확인하세요
         </p>
       </div>
 
       {/* Stats cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
-          label="Total Defects"
+          label="전체 결함"
           value={statsLoading ? '...' : (stats?.total ?? 0)}
-          subtitle="In database"
+          subtitle="DB 저장 건수"
           icon={<Bug size={20} />}
           color="red"
         />
         <StatCard
-          label="Total Analyses"
+          label="전체 분석"
           value={historyLoading ? '...' : history.length}
-          subtitle="All time"
+          subtitle="누적 분석 횟수"
           icon={<Zap size={20} />}
           color="indigo"
         />
         <StatCard
-          label="Avg Impact Score"
+          label="평균 영향도"
           value={historyLoading ? '...' : formatImpactScore(avgImpactScore)}
-          subtitle="Across analyses"
+          subtitle="분석 평균 점수"
           icon={<TrendingUp size={20} />}
           color="yellow"
         />
         <StatCard
-          label="High Risk Analyses"
+          label="고위험 분석"
           value={historyLoading ? '...' : highRiskCount}
-          subtitle="Critical or High risk"
+          subtitle="Critical/High 위험도"
           icon={<AlertTriangle size={20} />}
           color="green"
         />
@@ -121,7 +121,7 @@ export default function DashboardPage() {
         <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <BarChart3 size={16} className="text-indigo-400" />
-            <h3 className="text-sm font-semibold text-slate-200">Severity Distribution</h3>
+            <h3 className="text-sm font-semibold text-slate-200">심각도 분포</h3>
           </div>
           {statsLoading ? (
             <div className="h-48 flex items-center justify-center">
@@ -162,7 +162,7 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           ) : (
             <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
-              No defect data yet
+              결함 데이터가 없습니다
             </div>
           )}
         </div>
@@ -171,7 +171,7 @@ export default function DashboardPage() {
         <div className="bg-slate-800 border border-slate-700 rounded-xl p-6">
           <div className="flex items-center gap-2 mb-4">
             <Database size={16} className="text-indigo-400" />
-            <h3 className="text-sm font-semibold text-slate-200">Top Modules by Defects</h3>
+            <h3 className="text-sm font-semibold text-slate-200">모듈별 결함 현황 (Top 6)</h3>
           </div>
           {statsLoading ? (
             <div className="h-48 flex items-center justify-center">
@@ -203,7 +203,7 @@ export default function DashboardPage() {
             </ResponsiveContainer>
           ) : (
             <div className="h-48 flex items-center justify-center text-slate-500 text-sm">
-              No module data yet
+              모듈 데이터가 없습니다
             </div>
           )}
         </div>
@@ -216,13 +216,13 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
             <div className="flex items-center gap-2">
               <Zap size={15} className="text-indigo-400" />
-              <h3 className="text-sm font-semibold text-slate-200">Recent Analyses</h3>
+              <h3 className="text-sm font-semibold text-slate-200">최근 분석 내역</h3>
             </div>
             <button
               onClick={() => navigate('/analysis')}
               className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
             >
-              New Analysis <ArrowRight size={12} />
+              새 분석 <ArrowRight size={12} />
             </button>
           </div>
 
@@ -232,12 +232,12 @@ export default function DashboardPage() {
             </div>
           ) : history.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <p className="text-sm text-slate-400">No analyses yet</p>
+              <p className="text-sm text-slate-400">분석 내역이 없습니다</p>
               <button
                 onClick={() => navigate('/analysis')}
                 className="text-xs text-indigo-400 hover:text-indigo-300"
               >
-                Run your first analysis →
+                첫 번째 분석 시작하기 →
               </button>
             </div>
           ) : (
@@ -252,7 +252,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex items-center gap-3 mt-1">
                     <span className="text-xs text-slate-500">
-                      Score: {formatImpactScore(item.impact_score)}
+                      점수: {formatImpactScore(item.impact_score)}
                     </span>
                     {item.query_module && (
                       <span className="text-xs text-slate-600">{item.query_module}</span>
@@ -272,13 +272,13 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
             <div className="flex items-center gap-2">
               <Bug size={15} className="text-red-400" />
-              <h3 className="text-sm font-semibold text-slate-200">Recent Defects</h3>
+              <h3 className="text-sm font-semibold text-slate-200">최근 결함</h3>
             </div>
             <button
               onClick={() => navigate('/defects')}
               className="flex items-center gap-1 text-xs text-indigo-400 hover:text-indigo-300"
             >
-              View All <ArrowRight size={12} />
+              전체 보기 <ArrowRight size={12} />
             </button>
           </div>
 
@@ -288,12 +288,12 @@ export default function DashboardPage() {
             </div>
           ) : recentDefects.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 gap-2">
-              <p className="text-sm text-slate-400">No defects yet</p>
+              <p className="text-sm text-slate-400">결함 데이터가 없습니다</p>
               <button
                 onClick={() => navigate('/defects')}
                 className="text-xs text-indigo-400 hover:text-indigo-300"
               >
-                Upload defects →
+                결함 데이터 업로드 →
               </button>
             </div>
           ) : (
