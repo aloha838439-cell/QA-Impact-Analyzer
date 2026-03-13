@@ -4,51 +4,495 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Hello World</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;700;900&family=Noto+Sans+KR:wght@300;400&display=swap" rel="stylesheet">
   <style>
-    * {
+    *, *::before, *::after {
       margin: 0;
       padding: 0;
       box-sizing: border-box;
     }
 
+    :root {
+      --cyan: #00f5ff;
+      --magenta: #ff00aa;
+      --gold: #ffd700;
+      --bg: #050810;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+    }
+
     body {
-      min-height: 100vh;
+      background: var(--bg);
+      font-family: 'Outfit', sans-serif;
       display: flex;
       align-items: center;
       justify-content: center;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      min-height: 100vh;
     }
 
-    .container {
+    /* Canvas */
+    #constellation {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    /* Animated radial gradient mesh */
+    .bg-mesh {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse 60% 50% at 20% 30%, rgba(0, 245, 255, 0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 50% 60% at 80% 70%, rgba(255, 0, 170, 0.07) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 40% at 50% 50%, rgba(255, 215, 0, 0.04) 0%, transparent 60%);
+      animation: meshPulse 8s ease-in-out infinite alternate;
+    }
+
+    @keyframes meshPulse {
+      0%   { opacity: 0.6; transform: scale(1); }
+      100% { opacity: 1;   transform: scale(1.05); }
+    }
+
+    /* Floating geometric shapes */
+    .shapes {
+      position: fixed;
+      inset: 0;
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .shape {
+      position: absolute;
+      border-radius: 50%;
+      opacity: 0;
+      animation: shapeFloat linear infinite;
+    }
+
+    .shape-1 {
+      width: 180px; height: 180px;
+      top: 10%; left: 8%;
+      border: 1.5px solid rgba(0, 245, 255, 0.25);
+      box-shadow: 0 0 30px rgba(0, 245, 255, 0.1), inset 0 0 30px rgba(0, 245, 255, 0.05);
+      animation-duration: 18s; animation-delay: 0s;
+    }
+
+    .shape-2 {
+      width: 80px; height: 80px;
+      top: 65%; left: 12%;
+      background: rgba(255, 0, 170, 0.06);
+      border: 1px solid rgba(255, 0, 170, 0.3);
+      border-radius: 0;
+      transform: rotate(45deg);
+      animation-duration: 14s; animation-delay: -3s;
+    }
+
+    .shape-3 {
+      width: 240px; height: 240px;
+      top: 15%; right: 10%;
+      border: 1px solid rgba(255, 215, 0, 0.15);
+      box-shadow: 0 0 40px rgba(255, 215, 0, 0.05);
+      animation-duration: 22s; animation-delay: -7s;
+    }
+
+    .shape-4 {
+      width: 50px; height: 50px;
+      top: 75%; right: 15%;
+      border: 2px solid rgba(0, 245, 255, 0.35);
+      border-radius: 0;
+      transform: rotate(45deg);
+      animation-duration: 12s; animation-delay: -5s;
+    }
+
+    .shape-5 {
+      width: 120px; height: 120px;
+      bottom: 15%; right: 30%;
+      border: 1px solid rgba(255, 0, 170, 0.2);
+      animation-duration: 20s; animation-delay: -10s;
+    }
+
+    .shape-6 {
+      width: 30px; height: 30px;
+      top: 40%; left: 5%;
+      background: rgba(255, 215, 0, 0.15);
+      border: 1px solid rgba(255, 215, 0, 0.4);
+      border-radius: 0;
+      transform: rotate(45deg);
+      animation-duration: 10s; animation-delay: -2s;
+    }
+
+    @keyframes shapeFloat {
+      0%   { opacity: 0;    transform: translateY(20px) rotate(0deg); }
+      10%  { opacity: 1; }
+      90%  { opacity: 1; }
+      100% { opacity: 0;    transform: translateY(-30px) rotate(15deg); }
+    }
+
+    /* Hero card */
+    .stage {
+      position: relative;
+      z-index: 10;
+      perspective: 800px;
+    }
+
+    .card {
+      position: relative;
+      padding: 4rem 5rem;
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border-radius: 28px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow:
+        0 0 0 1px rgba(0, 245, 255, 0.08),
+        0 24px 80px rgba(0, 0, 0, 0.6),
+        0 0 60px rgba(0, 245, 255, 0.06),
+        inset 0 1px 0 rgba(255, 255, 255, 0.08);
       text-align: center;
-      padding: 3rem 4rem;
-      background: rgba(255, 255, 255, 0.15);
-      backdrop-filter: blur(10px);
-      border-radius: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.3);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+      transform-style: preserve-3d;
+      transition: transform 0.15s ease, box-shadow 0.3s ease;
+      animation: cardEntrance 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
     }
 
-    h1 {
-      font-size: 4rem;
+    @keyframes cardEntrance {
+      from { opacity: 0; transform: scale(0.88) translateY(30px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    .card::before {
+      content: '';
+      position: absolute;
+      inset: -1px;
+      border-radius: 29px;
+      background: linear-gradient(135deg, rgba(0,245,255,0.15), transparent 40%, rgba(255,0,170,0.1));
+      z-index: -1;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .card:hover::before { opacity: 1; }
+
+    .card:hover {
+      box-shadow:
+        0 0 0 1px rgba(0, 245, 255, 0.2),
+        0 32px 100px rgba(0, 0, 0, 0.7),
+        0 0 80px rgba(0, 245, 255, 0.12),
+        inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    }
+
+    /* Decorative top bar */
+    .card-bar {
+      position: absolute;
+      top: 0; left: 50%;
+      transform: translateX(-50%);
+      width: 60px; height: 3px;
+      background: linear-gradient(90deg, var(--cyan), var(--magenta));
+      border-radius: 0 0 4px 4px;
+      box-shadow: 0 0 16px rgba(0, 245, 255, 0.6);
+    }
+
+    /* Title */
+    .title {
+      font-family: 'Outfit', sans-serif;
+      font-size: clamp(3rem, 8vw, 5.5rem);
+      font-weight: 900;
+      letter-spacing: -2px;
+      line-height: 1;
+      background: linear-gradient(135deg, #ffffff 0%, var(--cyan) 40%, var(--magenta) 80%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.4));
+      animation: titleReveal 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.2s both;
+    }
+
+    @keyframes titleReveal {
+      from { opacity: 0; transform: translateY(16px); filter: drop-shadow(0 0 0px transparent); }
+      to   { opacity: 1; transform: translateY(0);    filter: drop-shadow(0 0 20px rgba(0, 245, 255, 0.4)); }
+    }
+
+    /* Divider */
+    .divider {
+      margin: 1.5rem auto;
+      width: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(0,245,255,0.5), rgba(255,0,170,0.5), transparent);
+      animation: dividerExpand 0.8s ease 0.6s both;
+    }
+
+    @keyframes dividerExpand {
+      from { width: 0; opacity: 0; }
+      to   { width: 80%; opacity: 1; }
+    }
+
+    /* Subtitle */
+    .subtitle {
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: clamp(0.95rem, 2.5vw, 1.15rem);
+      font-weight: 300;
+      color: rgba(255, 255, 255, 0.55);
+      letter-spacing: 0.08em;
+      animation: fadeUp 0.7s ease 0.8s both;
+    }
+
+    /* Tag badges */
+    .tags {
+      margin-top: 2rem;
+      display: flex;
+      gap: 0.6rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      animation: fadeUp 0.7s ease 1s both;
+    }
+
+    .tag {
+      padding: 0.3rem 0.9rem;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 300;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      border: 1px solid;
+    }
+
+    .tag-cyan  { color: var(--cyan);    border-color: rgba(0,245,255,0.3);   background: rgba(0,245,255,0.05); }
+    .tag-pink  { color: var(--magenta); border-color: rgba(255,0,170,0.3);   background: rgba(255,0,170,0.05); }
+    .tag-gold  { color: var(--gold);    border-color: rgba(255,215,0,0.3);   background: rgba(255,215,0,0.05); }
+
+    /* CTA Button */
+    .btn-wrap {
+      margin-top: 2.5rem;
+      animation: fadeUp 0.7s ease 1.2s both;
+    }
+
+    .btn {
+      position: relative;
+      display: inline-block;
+      padding: 0.75rem 2.2rem;
+      font-family: 'Outfit', sans-serif;
+      font-size: 0.9rem;
       font-weight: 700;
-      color: #ffffff;
-      letter-spacing: -1px;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #000;
+      background: linear-gradient(135deg, var(--cyan), #00aaff);
+      border: none;
+      border-radius: 100px;
+      cursor: pointer;
+      overflow: hidden;
+      box-shadow: 0 0 20px rgba(0, 245, 255, 0.4), 0 4px 16px rgba(0,0,0,0.4);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
 
-    p {
-      margin-top: 1rem;
-      font-size: 1.1rem;
-      color: rgba(255, 255, 255, 0.8);
+    .btn:hover {
+      transform: translateY(-2px) scale(1.03);
+      box-shadow: 0 0 36px rgba(0, 245, 255, 0.6), 0 8px 24px rgba(0,0,0,0.5);
+    }
+
+    .btn:active { transform: scale(0.97); }
+
+    .btn .ripple {
+      position: absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      background: rgba(255,255,255,0.5);
+      animation: rippleAnim 0.6s linear;
+      pointer-events: none;
+    }
+
+    @keyframes rippleAnim {
+      to { transform: scale(4); opacity: 0; }
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .card { padding: 3rem 2.5rem; }
+      .shape-1, .shape-3 { display: none; }
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Hello, World!</h1>
-    <p>나의 첫 번째 웹페이지</p>
+
+  <canvas id="constellation"></canvas>
+  <div class="bg-mesh"></div>
+
+  <div class="shapes">
+    <div class="shape shape-1"></div>
+    <div class="shape shape-2"></div>
+    <div class="shape shape-3"></div>
+    <div class="shape shape-4"></div>
+    <div class="shape shape-5"></div>
+    <div class="shape shape-6"></div>
   </div>
+
+  <div class="stage" id="stage">
+    <div class="card" id="card">
+      <div class="card-bar"></div>
+
+      <h1 class="title">Hello, World!</h1>
+
+      <div class="divider"></div>
+
+      <p class="subtitle">나의 첫 번째 웹페이지</p>
+
+      <div class="tags">
+        <span class="tag tag-cyan">HTML</span>
+        <span class="tag tag-pink">CSS</span>
+        <span class="tag tag-gold">JavaScript</span>
+      </div>
+
+      <div class="btn-wrap">
+        <button class="btn" id="btn">탐험 시작하기</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ── Constellation particle system ───────────────────────────── */
+    const canvas = document.getElementById('constellation');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [], mouse = { x: -9999, y: -9999 };
+
+    const PARTICLE_COUNT = 80;
+    const LINE_DIST = 130;
+    const MOUSE_RADIUS = 100;
+    const MOUSE_FORCE = 2.5;
+
+    function resize() {
+      W = canvas.width  = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    }
+
+    class Particle {
+      constructor() { this.reset(true); }
+
+      reset(init) {
+        this.x  = Math.random() * W;
+        this.y  = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.4;
+        this.vy = (Math.random() - 0.5) * 0.4;
+        this.r  = Math.random() * 1.8 + 0.6;
+        this.alpha = Math.random() * 0.5 + 0.3;
+        const palette = ['0,245,255', '255,0,170', '255,215,0', '120,180,255'];
+        this.color = palette[Math.floor(Math.random() * palette.length)];
+      }
+
+      update() {
+        const dx = this.x - mouse.x;
+        const dy = this.y - mouse.y;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+
+        if (dist < MOUSE_RADIUS) {
+          const force = (MOUSE_RADIUS - dist) / MOUSE_RADIUS * MOUSE_FORCE;
+          this.vx += (dx / dist) * force * 0.05;
+          this.vy += (dy / dist) * force * 0.05;
+        }
+
+        this.vx *= 0.99;
+        this.vy *= 0.99;
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.x < -20) this.x = W + 20;
+        if (this.x > W+20) this.x = -20;
+        if (this.y < -20) this.y = H + 20;
+        if (this.y > H+20) this.y = -20;
+      }
+
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${this.color},${this.alpha})`;
+        ctx.fill();
+      }
+    }
+
+    function init() {
+      resize();
+      particles = Array.from({ length: PARTICLE_COUNT }, () => new Particle());
+    }
+
+    function drawLines() {
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const a = particles[i], b = particles[j];
+          const dx = a.x - b.x, dy = a.y - b.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist < LINE_DIST) {
+            const alpha = (1 - dist / LINE_DIST) * 0.25;
+            ctx.beginPath();
+            ctx.moveTo(a.x, a.y);
+            ctx.lineTo(b.x, b.y);
+            ctx.strokeStyle = `rgba(0,245,255,${alpha})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, W, H);
+      particles.forEach(p => { p.update(); p.draw(); });
+      drawLines();
+      requestAnimationFrame(animate);
+    }
+
+    window.addEventListener('resize', () => { resize(); });
+    window.addEventListener('mousemove', e => { mouse.x = e.clientX; mouse.y = e.clientY; });
+    window.addEventListener('mouseleave', () => { mouse.x = -9999; mouse.y = -9999; });
+    window.addEventListener('touchmove', e => {
+      mouse.x = e.touches[0].clientX;
+      mouse.y = e.touches[0].clientY;
+    }, { passive: true });
+
+    init();
+    animate();
+
+    /* ── Card 3-D tilt on hover ───────────────────────────────────── */
+    const stage = document.getElementById('stage');
+    const card  = document.getElementById('card');
+
+    stage.addEventListener('mousemove', e => {
+      const rect = card.getBoundingClientRect();
+      const cx = rect.left + rect.width  / 2;
+      const cy = rect.top  + rect.height / 2;
+      const dx = (e.clientX - cx) / (rect.width  / 2);
+      const dy = (e.clientY - cy) / (rect.height / 2);
+      card.style.transform = `rotateY(${dx * 6}deg) rotateX(${-dy * 6}deg)`;
+    });
+
+    stage.addEventListener('mouseleave', () => {
+      card.style.transform = '';
+    });
+
+    /* ── Button ripple ────────────────────────────────────────────── */
+    document.getElementById('btn').addEventListener('click', function(e) {
+      const ripple = document.createElement('span');
+      ripple.classList.add('ripple');
+      const rect = this.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      ripple.style.cssText = `
+        width: ${size}px; height: ${size}px;
+        left: ${e.clientX - rect.left - size/2}px;
+        top:  ${e.clientY - rect.top  - size/2}px;
+      `;
+      this.appendChild(ripple);
+      setTimeout(() => ripple.remove(), 700);
+    });
+  </script>
 </body>
 </html>
