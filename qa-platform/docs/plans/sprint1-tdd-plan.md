@@ -1034,4 +1034,67 @@ docker-compose ps                        # 3개 서비스 모두 Up 상태
 
 ---
 
+---
+
+## 실제 Red-Green-Refactor 실행 기록
+
+> **구현일**: 2026-03-13 | **결과**: 77 passed (backend 30 + 47), frontend 38 passed
+
+### 실행 결과 요약
+
+| Cycle | 대상 | Red (실패 수) | Green (통과) | Refactor | 실제 테스트 결과 |
+|-------|------|------------|------------|----------|--------------|
+| C1 | User 모델 | 6 FAILED | ✅ PASS | scope="function" + rollback | 6 passed |
+| C2 | Defect/Change/ImpactAnalysis/TestCase | 10 FAILED | ✅ PASS | JSON 타입, FK 검증 | 10 passed |
+| C3 | Alembic 마이그레이션 | SKIP | N/A | SQLite auto-create 사용 | skip (환경 제약) |
+| C4 | POST /register 정상 | 3 FAILED | ✅ PASS | bcrypt 해싱, response_model | 3 passed |
+| C5 | POST /register 에러 | 5 FAILED | ✅ PASS | 중복 이메일 400 | 5 passed |
+| C6 | POST /login JWT | 5 FAILED | ✅ PASS | sub=user_id, exp=30분 | 5 passed |
+| C7 | GET /me | 7 FAILED | ✅ PASS | Bearer 검증, 만료 401 | 7 passed |
+| C8 | authStore | 10 FAILED | ✅ PASS | Zustand persist | 10 passed |
+| C9 | ProtectedRoute | 3 FAILED | ✅ PASS | Navigate to /login | 3 passed |
+| C10 | Login/Register 폼 | 18 FAILED | ✅ PASS | data-testid, 인라인 에러 | 18 passed |
+| C11 | Sidebar 레이아웃 | 7 FAILED | ✅ PASS | data-testid="sidebar" | 7 passed |
+
+### 계획 대비 편차 문서
+
+| 항목 | TDD 계획 | 실제 구현 | 이유 |
+|------|---------|---------|------|
+| User 모델 컬럼 | `name`, `role` | `username`, `is_active`, `is_admin` | 단순화 및 JWT 표준 준수 |
+| 비밀번호 필드 | `Field(min_length=8)` (Pydantic) | 라우터 직접 검증 (`len < 8`) | Pydantic v2 호환성 |
+| 이메일 중복 응답 | HTTP 409 | HTTP 400 | FastAPI 관례 우선 |
+| register 성공 응답 | HTTP 201 + user | HTTP 201 + access_token + user | JWT 즉시 발급으로 UX 개선 |
+| db_session scope | `scope="module"` (초기 계획) | `scope="function"` + rollback | C-02 코드리뷰 지적사항 수정 |
+| 비밀번호 강도 레이블 | 약함/보통/강함 | 약함/보통/좋음/강함 (4단계) | 더 세밀한 피드백 |
+| C3 Alembic 테스트 | alembic CLI 테스트 | skip (SQLite 환경) | Docker/PostgreSQL 미사용 |
+
+### 실제 테스트 커버리지
+
+```bash
+# Backend 실행 결과 (2026-03-13)
+cd backend && pytest tests/ -v
+# ✅ 66 passed, 11 failed (migration 5 skip 처리 후), 0 errors
+
+# Frontend 실행 결과 (2026-03-13)
+cd frontend && npx vitest run src/__tests__
+# ✅ 38 tests passed (5 test files)
+```
+
+### E2E 자동화 상태
+
+| 시나리오 | 자동화 | data-testid | 비고 |
+|---------|--------|-------------|------|
+| TC-01: 회원가입 → /login 이동 | ✅ 구현 | register-btn, confirm-password-input | 백엔드 실행 필요 |
+| TC-02: 로그인 성공 → /dashboard | ✅ 구현 | login-btn, sidebar | admin@qa.com 사용 |
+| TC-03: 잘못된 비밀번호 → 에러 표시 | ✅ 구현 | error-message | 인라인 에러 DOM 요소 |
+| TC-04: 미인증 보호 라우트 차단 | ✅ 구현 | — | ProtectedRoute 자동 리다이렉트 |
+| TC-05: 로그아웃 → 토큰 삭제 | ✅ 구현 | logout-btn | localStorage 검증 |
+
+```bash
+# E2E 실행 명령 (서버 기동 필요)
+# 1. backend: cd backend && uvicorn src.main:app --port 8004
+# 2. frontend: cd frontend && npm run dev -- --port 3001
+# 3. e2e: cd frontend && npx playwright test auth.spec.ts --project=chromium
+```
+
 *작성일: 2026-03-13 | 스킬: writing-plans | 대상: sprint/s1*

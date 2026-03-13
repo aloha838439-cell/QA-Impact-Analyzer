@@ -34,9 +34,11 @@ def _cosine_sim(a: np.ndarray, b: np.ndarray) -> np.ndarray:
 
 
 class SimilarityModel:
+    dim = EMBEDDING_DIM  # class attribute - accessible even via __new__
+
     def __init__(self, model_name: str = "hash512"):
         self.model_name = model_name
-        self.dim = EMBEDDING_DIM
+        self.dim = EMBEDDING_DIM  # also set as instance attribute
 
     def encode(self, texts: List[str]) -> np.ndarray:
         if not texts:

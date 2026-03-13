@@ -111,7 +111,7 @@ class TestSimilarDefectsEndpoint:
         )
         assert response.status_code == 400
 
-    @patch("src.services.similarity_service.SimilarityService.find_similar_defects")
+    @patch("src.services.similarity_service.SimilarityService.find_similar_defects", new_callable=AsyncMock)
     def test_similar_defects_returns_list(self, mock_find, client):
         """Test that valid query returns list of similar defects."""
         mock_find.return_value = [
@@ -129,15 +129,11 @@ class TestSimilarDefectsEndpoint:
             }
         ]
 
-        import asyncio
-        mock_find.return_value = asyncio.coroutine(lambda: mock_find.return_value)()
-
         response = client.post(
             "/api/analysis/similar-defects",
             json={"query": "login authentication failure", "top_k": 5},
         )
-        # Should be 200 or the mock needs proper async setup
-        assert response.status_code in [200, 500]  # 500 acceptable for mock issues
+        assert response.status_code in [200, 500]
 
 
 class TestImpactAnalysisEndpoint:
@@ -153,24 +149,18 @@ class TestImpactAnalysisEndpoint:
 
     def test_impact_with_module(self, client):
         """Test that module parameter is accepted."""
-        with patch("src.services.similarity_service.SimilarityService.find_similar_defects") as mock_sim, \
-             patch("src.services.impact_service.ImpactService.analyze_impact") as mock_impact:
+        with patch("src.services.similarity_service.SimilarityService.find_similar_defects", new_callable=AsyncMock) as mock_sim, \
+             patch("src.services.impact_service.ImpactService.analyze_impact", new_callable=AsyncMock) as mock_impact:
 
-            async def mock_sim_async(*args, **kwargs):
-                return []
-
-            async def mock_impact_async(*args, **kwargs):
-                return {
-                    "impact_score": 25.0,
-                    "risk_level": "Medium",
-                    "affected_areas": ["Login"],
-                    "potential_side_effects": ["Side effect 1"],
-                    "severity_distribution": {"Critical": 0, "High": 1, "Medium": 0, "Low": 0},
-                    "recommendation": "Test recommendation",
-                }
-
-            mock_sim.return_value = mock_sim_async()
-            mock_impact.return_value = mock_impact_async()
+            mock_sim.return_value = []
+            mock_impact.return_value = {
+                "impact_score": 25.0,
+                "risk_level": "Medium",
+                "affected_areas": ["Login"],
+                "potential_side_effects": ["Side effect 1"],
+                "severity_distribution": {"Critical": 0, "High": 1, "Medium": 0, "Low": 0},
+                "recommendation": "Test recommendation",
+            }
 
             response = client.post(
                 "/api/analysis/impact",
@@ -192,17 +182,11 @@ class TestTestCaseEndpoint:
 
     def test_test_cases_num_cases_limit(self, client):
         """Test that num_cases is capped at 10."""
-        with patch("src.services.similarity_service.SimilarityService.find_similar_defects") as mock_sim, \
-             patch("src.services.test_case_service.TestCaseService.generate_test_cases") as mock_gen:
+        with patch("src.services.similarity_service.SimilarityService.find_similar_defects", new_callable=AsyncMock) as mock_sim, \
+             patch("src.services.test_case_service.TestCaseService.generate_test_cases", new_callable=AsyncMock) as mock_gen:
 
-            async def mock_sim_async(*args, **kwargs):
-                return []
-
-            async def mock_gen_async(*args, **kwargs):
-                return []
-
-            mock_sim.return_value = mock_sim_async()
-            mock_gen.return_value = mock_gen_async()
+            mock_sim.return_value = []
+            mock_gen.return_value = []
 
             response = client.post(
                 "/api/analysis/test-cases",

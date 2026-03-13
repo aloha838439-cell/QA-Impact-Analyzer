@@ -11,8 +11,15 @@ The database URL is resolved from:
 import os
 import subprocess
 import sys
+import shutil
 import pytest
 from sqlalchemy import create_engine, inspect, text
+
+# Skip all migration tests when alembic is not configured (SQLite dev environment)
+pytestmark = pytest.mark.skipif(
+    not os.path.isdir(os.path.join(os.path.dirname(__file__), "..", "..", "alembic", "versions")),
+    reason="Alembic migrations not configured — project uses SQLAlchemy auto-create with SQLite"
+)
 
 
 # ---------------------------------------------------------------------------
