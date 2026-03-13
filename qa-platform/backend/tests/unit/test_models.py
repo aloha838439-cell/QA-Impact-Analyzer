@@ -30,13 +30,23 @@ def engine():
     Base.metadata.drop_all(e)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture(scope="function")
 def db_session(engine):
-    """Provide a SQLAlchemy session bound to the in-memory engine."""
-    Session = sessionmaker(bind=engine)
+    """Function-scoped session — rolls back after every test to prevent state leakage.
+
+    C-02 fix: changed from scope='module' to scope='function'.
+    Each write test now runs in an isolated transaction that is automatically
+    rolled back after the test completes, regardless of whether the test passes
+    or fails. This eliminates the risk of dirty state leaking between tests.
+    """
+    connection = engine.connect()
+    transaction = connection.begin()
+    Session = sessionmaker(bind=connection)
     session = Session()
     yield session
     session.close()
+    transaction.rollback()
+    connection.close()
 
 
 @pytest.fixture(scope="module")
@@ -107,8 +117,7 @@ class TestUserModel:
         db_session.refresh(user)
 
         assert user.is_active is True
-        db_session.delete(user)
-        db_session.commit()
+        # No manual cleanup needed — function-scoped session rolls back automatically.
 
     def test_user_is_admin_default_false(self, db_session):
         """is_admin should default to False when a User is created without specifying it."""
@@ -122,8 +131,6 @@ class TestUserModel:
         db_session.refresh(user)
 
         assert user.is_admin is False
-        db_session.delete(user)
-        db_session.commit()
 
     def test_user_email_unique_constraint_enforced(self, db_session):
         """Inserting two users with the same email must raise an IntegrityError."""
@@ -138,11 +145,7 @@ class TestUserModel:
 
         with pytest.raises(IntegrityError):
             db_session.commit()
-
-        db_session.rollback()
-        # Clean up user1
-        db_session.delete(db_session.query(User).filter_by(email="dup@example.com").first())
-        db_session.commit()
+        # rollback handled automatically by function-scoped fixture
 
     def test_user_created_at_auto_populated(self, db_session):
         """created_at should be populated automatically upon insert."""
@@ -156,8 +159,6 @@ class TestUserModel:
         db_session.refresh(user)
 
         assert user.created_at is not None
-        db_session.delete(user)
-        db_session.commit()
 
     def test_user_id_is_primary_key(self, inspector):
         """id column must be the primary key of the users table."""
@@ -191,8 +192,6 @@ class TestDefectModel:
         db_session.refresh(defect)
 
         assert defect.severity == "Medium"
-        db_session.delete(defect)
-        db_session.commit()
 
     def test_defect_status_default(self, db_session):
         """status should default to 'Open'."""
@@ -206,8 +205,6 @@ class TestDefectModel:
         db_session.refresh(defect)
 
         assert defect.status == "Open"
-        db_session.delete(defect)
-        db_session.commit()
 
     def test_defect_embedding_can_store_json_array(self, db_session):
         """embedding column (JSON) should be able to store and retrieve a list of floats."""
@@ -223,8 +220,6 @@ class TestDefectModel:
         db_session.refresh(defect)
 
         assert defect.embedding == embedding_data
-        db_session.delete(defect)
-        db_session.commit()
 
     def test_defect_reporter_id_fk_to_users(self, inspector):
         """reporter_id column must be a foreign key referencing users.id."""
@@ -261,8 +256,6 @@ class TestChangeModel:
         db_session.refresh(change)
 
         assert change.change_type == "Feature"
-        db_session.delete(change)
-        db_session.commit()
 
     def test_change_user_id_fk_to_users(self, inspector):
         """user_id column must be a FK referencing users.id."""
@@ -318,8 +311,6 @@ class TestImpactAnalysisModel:
         db_session.refresh(analysis)
 
         assert analysis.impact_score == 0.0
-        db_session.delete(analysis)
-        db_session.commit()
 
     def test_risk_level_default(self, db_session):
         """risk_level should default to 'Low'."""
@@ -329,8 +320,6 @@ class TestImpactAnalysisModel:
         db_session.refresh(analysis)
 
         assert analysis.risk_level == "Low"
-        db_session.delete(analysis)
-        db_session.commit()
 
 
 # ---------------------------------------------------------------------------
@@ -362,8 +351,6 @@ class TestTestCaseModel:
         db_session.refresh(tc)
 
         assert tc.priority == "Medium"
-        db_session.delete(tc)
-        db_session.commit()
 
     def test_test_case_type_default(self, db_session):
         """test_type should default to 'Functional'."""
@@ -373,8 +360,6 @@ class TestTestCaseModel:
         db_session.refresh(tc)
 
         assert tc.test_type == "Functional"
-        db_session.delete(tc)
-        db_session.commit()
 
     def test_test_case_steps_can_store_json_list(self, db_session):
         """steps column (JSON) should store and retrieve a list of step strings."""
@@ -385,8 +370,6 @@ class TestTestCaseModel:
         db_session.refresh(tc)
 
         assert tc.steps == steps
-        db_session.delete(tc)
-        db_session.commit()
 
 
 # ---------------------------------------------------------------------------
