@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 
 # ── Force test environment variables BEFORE importing any application modules ──
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
-os.environ.setdefault("DATABASE_URL", "sqlite:///./test_auth.db")
+os.environ.setdefault("DATABASE_URL", "sqlite:///:memory:")
 
 from src.models.base import Base
 # Import all models so their table definitions are registered on Base.metadata
@@ -32,7 +32,7 @@ from src.main import app
 # In-memory test engine (module-scoped — created once per test session)
 # ---------------------------------------------------------------------------
 
-TEST_DB_URL = "sqlite:///./test_auth.db"
+TEST_DB_URL = "sqlite:///:memory:"
 
 _test_engine = create_engine(
     TEST_DB_URL,

@@ -100,8 +100,9 @@ export default function RegisterPage() {
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
+              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">Email</label>
               <input
+                id="email"
                 type="email"
                 data-testid="email-input"
                 value={formData.email}
@@ -118,8 +119,9 @@ export default function RegisterPage() {
 
             {/* Username */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
+              <label htmlFor="username" className="block text-sm font-medium text-slate-300 mb-1.5">Username</label>
               <input
+                id="username"
                 type="text"
                 data-testid="name-input"
                 value={formData.username}
@@ -136,9 +138,10 @@ export default function RegisterPage() {
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
+              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1.5">Password</label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
                   data-testid="password-input"
                   value={formData.password}
@@ -181,11 +184,12 @@ export default function RegisterPage() {
 
             {/* Confirm Password */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300 mb-1.5">
                 Confirm Password
               </label>
               <div className="relative">
                 <input
+                  id="confirmPassword"
                   type="password"
                   value={formData.confirmPassword}
                   onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
