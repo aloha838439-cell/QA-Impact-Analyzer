@@ -197,7 +197,8 @@ describe('C10 — LoginPage', () => {
 
   it('loading state — login-btn is disabled while request is pending', async () => {
     // Create a promise that never resolves to simulate "pending" state
-    let resolveFn!: (v: unknown) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolveFn!: (v: any) => void;
     vi.mocked(authService.login).mockReturnValueOnce(
       new Promise((resolve) => { resolveFn = resolve; }) as ReturnType<typeof authService.login>
     );
