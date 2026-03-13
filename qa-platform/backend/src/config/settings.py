@@ -1,12 +1,18 @@
 from pydantic_settings import BaseSettings
-from pydantic import field_validator
 from typing import Optional
 import os
+
+# On Vercel, only /tmp is writable
+_default_db = (
+    "sqlite:////tmp/qadb.sqlite"
+    if os.environ.get("VERCEL")
+    else "sqlite:///./qadb.sqlite"
+)
 
 
 class Settings(BaseSettings):
     # Database
-    DATABASE_URL: str = "postgresql://qauser:qapassword@localhost:5432/qadb"
+    DATABASE_URL: str = _default_db
 
     # JWT
     SECRET_KEY: str = "dev-secret-key-change-in-production"
@@ -14,7 +20,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     # ML Model
-    SENTENCE_TRANSFORMER_MODEL: str = "paraphrase-multilingual-MiniLM-L12-v2"
+    SENTENCE_TRANSFORMER_MODEL: str = "tfidf"
 
     # App settings
     APP_NAME: str = "QA Impact Analyzer"
