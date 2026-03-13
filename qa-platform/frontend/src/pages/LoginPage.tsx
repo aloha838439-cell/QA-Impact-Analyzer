@@ -20,9 +20,9 @@ export default function LoginPage() {
 
   const validate = () => {
     const newErrors: Record<string, string> = {};
-    if (!formData.email) newErrors.email = 'Email is required';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = 'Invalid email format';
-    if (!formData.password) newErrors.password = 'Password is required';
+    if (!formData.email) newErrors.email = '이메일을 입력하세요';
+    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) newErrors.email = '올바른 이메일 형식이 아닙니다';
+    if (!formData.password) newErrors.password = '비밀번호를 입력하세요';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -32,15 +32,17 @@ export default function LoginPage() {
     if (!validate()) return;
 
     setIsLoading(true);
+    setErrors({});
     try {
       const response = await authService.login(formData);
       login(response.access_token, response.user);
-      toast.success(`Welcome back, ${response.user.username}!`);
+      toast.success(`환영합니다, ${response.user.username}님!`);
       navigate(from, { replace: true });
     } catch (err: unknown) {
       const message =
         (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ||
-        'Login failed. Please check your credentials.';
+        '이메일 또는 비밀번호가 올바르지 않습니다.';
+      setErrors({ form: message });
       toast.error(message);
     } finally {
       setIsLoading(false);
@@ -55,20 +57,24 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-14 h-14 bg-indigo-600 rounded-2xl mb-4">
             <Activity size={28} className="text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-slate-200">QA Impact Analyzer</h1>
-          <p className="text-slate-400 text-sm mt-1">Sign in to your account</p>
+          <h1 className="text-2xl font-bold text-slate-200">QA 영향도 분석기</h1>
+          <p className="text-slate-400 text-sm mt-1">계정에 로그인하세요</p>
         </div>
 
         {/* Form card */}
         <div className="bg-slate-800 border border-slate-700 rounded-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form onSubmit={handleSubmit} noValidate className="space-y-5">
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Email address
+              <label htmlFor="email" className="block text-sm font-medium text-slate-300 mb-1.5">
+                이메일 주소
               </label>
               <input
+                id="email"
                 type="email"
+                data-testid="email-input"
+                aria-describedby={errors.email ? 'email-error' : undefined}
+                aria-invalid={!!errors.email}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className={`w-full bg-slate-700 border rounded-lg px-3 py-2.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
@@ -79,72 +85,94 @@ export default function LoginPage() {
                 disabled={isLoading}
               />
               {errors.email && (
-                <p className="text-xs text-red-400 mt-1">{errors.email}</p>
+                <p id="email-error" role="alert" data-testid="email-error" className="text-xs text-red-400 mt-1">
+                  {errors.email}
+                </p>
               )}
             </div>
 
             {/* Password */}
             <div>
-              <label className="block text-sm font-medium text-slate-300 mb-1.5">
-                Password
+              <label htmlFor="password" className="block text-sm font-medium text-slate-300 mb-1.5">
+                비밀번호
               </label>
               <div className="relative">
                 <input
+                  id="password"
                   type={showPassword ? 'text' : 'password'}
+                  data-testid="password-input"
+                  aria-describedby={errors.password ? 'password-error' : undefined}
+                  aria-invalid={!!errors.password}
                   value={formData.password}
                   onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                   className={`w-full bg-slate-700 border rounded-lg px-3 py-2.5 pr-10 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors ${
                     errors.password ? 'border-red-500' : 'border-slate-600'
                   }`}
-                  placeholder="Your password"
+                  placeholder="비밀번호를 입력하세요"
                   autoComplete="current-password"
                   disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? '비밀번호 숨기기' : '비밀번호 표시'}
                   className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
                 </button>
               </div>
               {errors.password && (
-                <p className="text-xs text-red-400 mt-1">{errors.password}</p>
+                <p id="password-error" role="alert" data-testid="password-error" className="text-xs text-red-400 mt-1">
+                  {errors.password}
+                </p>
               )}
             </div>
+
+            {/* API error message */}
+            {errors.form && (
+              <p
+                role="alert"
+                aria-live="polite"
+                data-testid="error-message"
+                className="text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg px-3 py-2"
+              >
+                {errors.form}
+              </p>
+            )}
 
             {/* Submit */}
             <button
               type="submit"
+              data-testid="login-btn"
               disabled={isLoading}
               className="w-full bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-medium py-2.5 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
             >
               {isLoading ? (
                 <>
                   <LoadingSpinner size="sm" />
-                  <span>Signing in...</span>
+                  <span>로그인 중...</span>
                 </>
               ) : (
-                'Sign in'
+                '로그인'
               )}
             </button>
           </form>
 
-          {/* Demo credentials hint */}
-          <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-            <p className="text-xs text-slate-400 text-center">
-              Demo: Register a new account to get started
-            </p>
+          {/* Default credentials */}
+          <div className="mt-4 p-3 bg-indigo-900/30 border border-indigo-700/40 rounded-lg">
+            <p className="text-xs text-indigo-300 font-medium mb-1">기본 계정</p>
+            <p className="text-xs text-slate-300">이메일: <span className="font-mono text-indigo-300">admin@qa.com</span></p>
+            <p className="text-xs text-slate-300">비밀번호: <span className="font-mono text-indigo-300">admin1234</span></p>
           </div>
-        </div>
 
-        {/* Register link */}
-        <p className="text-center text-sm text-slate-400 mt-6">
-          Don't have an account?{' '}
-          <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
-            Create one
-          </Link>
-        </p>
+          {/* Register link */}
+          <p className="text-center text-sm text-slate-400 mt-4">
+            계정이 없으신가요?{' '}
+            <Link to="/register" className="text-indigo-400 hover:text-indigo-300 font-medium">
+              회원가입
+            </Link>
+          </p>
+        </div>
       </div>
     </div>
   );

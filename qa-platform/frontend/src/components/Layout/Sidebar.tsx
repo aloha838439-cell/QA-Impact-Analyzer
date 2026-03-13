@@ -15,20 +15,20 @@ const navItems = [
   {
     to: '/dashboard',
     icon: LayoutDashboard,
-    label: 'Dashboard',
-    description: 'Overview & stats',
+    label: '대시보드',
+    description: '현황 및 통계',
   },
   {
     to: '/analysis',
     icon: Zap,
-    label: 'Impact Analysis',
-    description: 'Analyze changes',
+    label: '영향도 분석',
+    description: '변경 영향도 분석',
   },
   {
     to: '/defects',
     icon: Bug,
-    label: 'Defects',
-    description: 'Manage defects',
+    label: '결함 관리',
+    description: '결함 데이터 관리',
   },
 ];
 
@@ -38,14 +38,14 @@ export default function Layout() {
 
   const handleLogout = () => {
     logout();
-    toast.success('Logged out successfully');
+    toast.success('로그아웃 되었습니다');
     navigate('/login');
   };
 
   return (
     <div className="flex h-screen bg-slate-900 overflow-hidden">
       {/* Sidebar */}
-      <aside className="w-60 flex-shrink-0 bg-slate-800 border-r border-slate-700 flex flex-col">
+      <aside data-testid="sidebar" className="w-60 flex-shrink-0 bg-slate-800 border-r border-slate-700 flex flex-col">
         {/* Logo */}
         <div className="px-6 py-5 border-b border-slate-700">
           <div className="flex items-center gap-3">
@@ -53,8 +53,8 @@ export default function Layout() {
               <Activity size={18} className="text-white" />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-200 leading-tight">QA Impact</h1>
-              <p className="text-xs text-slate-500 leading-tight">Analyzer</p>
+              <h1 className="text-sm font-bold text-slate-200 leading-tight">QA 영향도</h1>
+              <p className="text-xs text-slate-500 leading-tight">분석기</p>
             </div>
           </div>
         </div>
@@ -104,11 +104,12 @@ export default function Layout() {
             </div>
           </div>
           <button
+            data-testid="logout-btn"
             onClick={handleLogout}
             className="w-full flex items-center gap-3 px-3 py-2 text-slate-400 hover:text-red-400 hover:bg-red-400/10 rounded-lg transition-colors duration-200 text-sm"
           >
             <LogOut size={16} />
-            <span>Sign out</span>
+            <span>로그아웃</span>
           </button>
         </div>
       </aside>

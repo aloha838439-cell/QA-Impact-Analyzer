@@ -43,8 +43,8 @@ export function TestCaseList({ testCases, isLoading, error }: TestCaseListProps)
         <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center">
           <FlaskConical size={20} className="text-slate-500" />
         </div>
-        <p className="text-sm text-slate-400">No test cases generated yet</p>
-        <p className="text-xs text-slate-500">Run analysis to get AI-recommended test cases</p>
+        <p className="text-sm text-slate-400">생성된 테스트케이스가 없습니다</p>
+        <p className="text-xs text-slate-500">분석을 실행하면 AI 추천 테스트케이스가 생성됩니다</p>
       </div>
     );
   }
@@ -135,7 +135,7 @@ export default function TestCaseCard({ testCase, index }: TestCaseCardProps) {
           {testCase.steps && testCase.steps.length > 0 && (
             <div className="mb-4">
               <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Test Steps
+                테스트 단계
               </h5>
               <ol className="space-y-2">
                 {testCase.steps.map((step, i) => (
@@ -154,7 +154,7 @@ export default function TestCaseCard({ testCase, index }: TestCaseCardProps) {
           {testCase.expected_result && (
             <div className="mb-3">
               <h5 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
-                Expected Result
+                기대 결과
               </h5>
               <div className="flex items-start gap-2 bg-green-500/5 border border-green-500/20 rounded-lg p-2.5">
                 <CheckSquare size={12} className="text-green-400 mt-0.5 flex-shrink-0" />

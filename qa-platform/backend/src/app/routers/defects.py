@@ -100,6 +100,52 @@ async def get_defect_stats(
     return await service.get_stats()
 
 
+@router.delete("/all", status_code=status.HTTP_200_OK)
+async def delete_all_defects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """전체 결함 데이터 및 분석 내역 삭제 (관리자 전용)."""
+    from src.models.defect import Defect
+    from src.models.impact_analysis import ImpactAnalysis
+    from src.models.test_case import TestCase
+    analysis_count = db.query(ImpactAnalysis).count()
+    db.query(ImpactAnalysis).delete()
+    db.query(TestCase).delete()
+    count = db.query(Defect).count()
+    db.query(Defect).delete()
+    db.commit()
+    return {"message": f"{count}개 결함 및 {analysis_count}개 분석 내역이 모두 삭제되었습니다", "deleted": count}
+
+
+@router.post("/seed")
+async def seed_defects(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Seed database with sample defects for development."""
+    from src.utils.seed_data import SEED_DEFECTS
+    service = DefectService(db)
+
+    created = 0
+    for defect_data in SEED_DEFECTS:
+        try:
+            await service.create_defect(
+                title=defect_data["title"],
+                description=defect_data["description"],
+                severity=defect_data["severity"],
+                module=defect_data["module"],
+                status=defect_data.get("status", "Open"),
+                reporter=defect_data.get("reporter", "Seed Script"),
+                related_features=defect_data.get("related_features", []),
+            )
+            created += 1
+        except Exception:
+            pass
+
+    return {"message": f"Seeded {created} defects", "total": len(SEED_DEFECTS)}
+
+
 @router.get("/{defect_id}", response_model=DefectResponse)
 async def get_defect(
     defect_id: int,
@@ -138,31 +184,3 @@ async def create_defect(
         related_features=request.related_features or [],
     )
     return defect.to_dict()
-
-
-@router.post("/seed")
-async def seed_defects(
-    db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user),
-):
-    """Seed database with sample defects for development."""
-    from src.utils.seed_data import SEED_DEFECTS
-    service = DefectService(db)
-
-    created = 0
-    for defect_data in SEED_DEFECTS:
-        try:
-            await service.create_defect(
-                title=defect_data["title"],
-                description=defect_data["description"],
-                severity=defect_data["severity"],
-                module=defect_data["module"],
-                status=defect_data.get("status", "Open"),
-                reporter=defect_data.get("reporter", "Seed Script"),
-                related_features=defect_data.get("related_features", []),
-            )
-            created += 1
-        except Exception:
-            pass
-
-    return {"message": f"Seeded {created} defects", "total": len(SEED_DEFECTS)}

@@ -44,4 +44,9 @@ export const defectService = {
     const response = await api.post<{ message: string; total: number }>('/api/defects/seed');
     return response.data;
   },
+
+  async deleteAll(): Promise<{ message: string; deleted: number }> {
+    const response = await api.delete<{ message: string; deleted: number }>('/api/defects/all');
+    return response.data;
+  },
 };

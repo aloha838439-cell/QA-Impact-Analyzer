@@ -16,7 +16,7 @@ export default function ImpactVisualization({ result, isLoading, error }: Impact
     return (
       <div className="space-y-4">
         <div className="flex flex-col items-center py-4">
-          <LoadingSpinner size="lg" label="Calculating impact score..." />
+          <LoadingSpinner size="lg" label="영향도 점수 계산 중..." />
         </div>
         <Skeleton lines={3} />
         <Skeleton lines={4} />
@@ -39,8 +39,8 @@ export default function ImpactVisualization({ result, isLoading, error }: Impact
         <div className="w-12 h-12 bg-slate-700 rounded-full flex items-center justify-center">
           <Zap size={20} className="text-slate-500" />
         </div>
-        <p className="text-sm text-slate-400">No impact analysis yet</p>
-        <p className="text-xs text-slate-500">Run analysis to see impact score and affected areas</p>
+        <p className="text-sm text-slate-400">영향도 분석 결과가 없습니다</p>
+        <p className="text-xs text-slate-500">분석을 실행하면 영향도 점수와 영향 영역이 표시됩니다</p>
       </div>
     );
   }
@@ -57,7 +57,7 @@ export default function ImpactVisualization({ result, isLoading, error }: Impact
       {/* Severity Distribution */}
       <div>
         <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-          Severity Distribution
+          심각도 분포
         </h4>
         <div className="space-y-2">
           {Object.entries(severity_distribution).map(([severity, count]) => {
@@ -91,7 +91,7 @@ export default function ImpactVisualization({ result, isLoading, error }: Impact
         <div>
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <MapPin size={12} />
-            Affected Areas
+            영향 영역
           </h4>
           <div className="flex flex-wrap gap-2">
             {affected_areas.map((area) => (
@@ -111,7 +111,7 @@ export default function ImpactVisualization({ result, isLoading, error }: Impact
         <div>
           <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-1.5">
             <AlertTriangle size={12} className="text-yellow-400" />
-            Potential Side Effects
+            잠재적 사이드 이펙트
           </h4>
           <div className="space-y-2">
             {potential_side_effects.map((effect, i) => (

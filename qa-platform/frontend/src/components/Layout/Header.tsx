@@ -4,16 +4,16 @@ import { useAuthStore } from '../../store/authStore';
 
 const PAGE_TITLES: Record<string, { title: string; subtitle: string }> = {
   '/dashboard': {
-    title: 'Dashboard',
-    subtitle: 'Overview of your QA metrics and recent activity',
+    title: '대시보드',
+    subtitle: 'QA 지표 및 최근 활동 현황',
   },
   '/analysis': {
-    title: 'Impact Analysis',
-    subtitle: 'Analyze change impact and get test case recommendations',
+    title: '영향도 분석',
+    subtitle: '변경 영향도 분석 및 테스트케이스 자동 추천',
   },
   '/defects': {
-    title: 'Defect Management',
-    subtitle: 'Browse, search, and manage defect records',
+    title: '결함 관리',
+    subtitle: '결함 데이터 조회, 검색 및 관리',
   },
 };
 
