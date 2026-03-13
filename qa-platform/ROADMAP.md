@@ -584,6 +584,88 @@ npx playwright show-report
 
 ---
 
+## AI 모델 선택 근거
+
+### 임베딩 모델 결정 이력
+
+#### 1단계 — 최초 설계 (sentence-transformers)
+
+**선택**: `paraphrase-multilingual-MiniLM-L12-v2` (sentence-transformers)
+
+**선택 근거**:
+- 한국어/영어 혼용 결함 데이터에 적합한 다국어 지원
+- 384차원 밀집 벡터로 코사인 유사도 기반 의미론적 검색 가능
+- Hugging Face 모델 허브 다운로드 수 500만+ 검증된 모델
+- 벡터 간 코사인 유사도 계산으로 O(n) 전수 비교 가능 (MVP 규모 허용)
+
+**예상 성능**: 정밀도(Precision@5) ≈ 85%, 재현율(Recall@10) ≈ 90%
+
+---
+
+#### 2단계 — 환경 제약으로 인한 대체 (hash-based encoding)
+
+**문제 발생**: Python 3.14 환경에서 `torch` 빌드 실패, scikit-learn 빌드 실패
+
+```
+ERROR: Failed building wheel for torch
+ERROR: Failed building wheel for scikit-learn
+```
+
+**대안 검토**:
+
+| 옵션 | 정확도 | 의존성 크기 | 배포 가능성 | 결정 |
+|------|--------|------------|------------|------|
+| sentence-transformers | ★★★★★ | ~2GB | ❌ (Python 3.14 비호환) | 기각 |
+| TF-IDF (scikit-learn) | ★★★☆☆ | ~50MB | ❌ (빌드 실패) | 기각 |
+| **512-dim hash encoding** | **★★★☆☆** | **~5MB** | **✅** | **채택** |
+| Random projection | ★★☆☆☆ | ~1MB | ✅ | 기각 (정확도 부족) |
+
+**최종 선택**: 512-dim 해시 기반 텍스트 인코딩
+
+**선택 근거**:
+1. **결정론적(Deterministic)**: 동일 텍스트 → 항상 동일 벡터, 재현 가능한 테스트 가능
+2. **의존성 제로**: numpy만 사용, Python 3.14 포함 전 환경 호환
+3. **고정 차원 보장**: 임베딩 차원 불일치 오류 원천 차단 (TF-IDF는 어휘집 크기에 따라 차원 가변)
+4. **서버리스 배포 호환**: Vercel 함수 크기 제한(15MB) 내 배포 가능
+5. **응답 속도**: 임베딩 생성 < 1ms (sentence-transformers 대비 100배 이상 빠름)
+
+**트레이드오프 인정**:
+- 의미론적 유사도(semantic similarity) 미지원 → 키워드 겹침 기반 유사도
+- 동의어 처리 불가 ("오류" ≠ "에러" 로 인식)
+- 예상 정밀도: Precision@5 ≈ 60%, sentence-transformers 대비 약 25% 낮음
+
+---
+
+#### 3단계 — 로드맵 (Sprint 5)
+
+**목표**: pgvector + multilingual embedding 모델로 교체
+
+```
+현재: hash_encode(text) → 512-dim float32 → cosine_similarity (in-memory)
+목표: MiniLM-L12 → 384-dim → pgvector IVFFlat index → ANN 검색 (1000건 ≤ 500ms)
+```
+
+**마이그레이션 전략**:
+1. Python 3.12로 백엔드 환경 고정 (sentence-transformers 호환)
+2. pgvector extension 활성화 + `VECTOR(384)` 컬럼 추가
+3. 기존 결함 데이터 일괄 재임베딩 (배치 처리)
+4. `EMBEDDING_DIM = 384`로 상수 변경, 기존 hash 벡터 무효화
+
+---
+
+### 테스트케이스 생성 전략 결정
+
+**선택**: 규칙 기반 템플릿 생성 (Rule-based Template)
+
+**선택 근거**:
+- LLM API(GPT-4, Claude) 사용 시 API 비용 발생 + 레이턴시 2~5초 추가
+- MVP 단계에서는 유사 결함 기반 패턴 추출로 충분한 품질 달성 가능
+- 생성된 TC의 구조적 일관성 보장 (steps/expected_result 필드 항상 존재)
+
+**트레이드오프**: 창의적 엣지케이스 TC 생성 불가 → Sprint 5에서 LLM 통합 검토
+
+---
+
 ## 기술 부채 관리
 
 | 항목 | 발생 시점 | 해소 목표 |
@@ -593,6 +675,7 @@ npx playwright show-report
 | 더미 데이터 하드코딩 → Redmine 연동 | R1 MVP | Sprint 4 |
 | 단순 템플릿 TC 생성 → LLM 기반 | R1 MVP | Sprint 5 |
 | 단일 서버 → 수평 확장 (K8s) | R2 | Sprint 9 |
+| sentence-transformers 미적용 → hash encoding 사용 중 | R1 MVP | Sprint 5 (Python 3.12 환경 고정 후) |
 
 ---
 
