@@ -15,11 +15,21 @@ import {
   X,
   ChevronDown,
   Trash2,
+  Link,
+  CheckCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { clsx } from 'clsx';
 
 const SEVERITY_OPTIONS: (Severity | '')[] = ['', 'Critical', 'High', 'Medium', 'Low'];
+
+interface RedmineForm {
+  baseUrl: string;
+  apiKey: string;
+  projectId: string;
+  limit: number;
+  statusId: string;
+}
 
 export default function DefectsPage() {
   const queryClient = useQueryClient();
@@ -29,6 +39,19 @@ export default function DefectsPage() {
   const [severityFilter, setSeverityFilter] = useState<Severity | ''>('');
   const [moduleFilter, setModuleFilter] = useState('');
   const [isDragging, setIsDragging] = useState(false);
+
+  // Redmine modal state
+  const [showRedmineModal, setShowRedmineModal] = useState(false);
+  const [redmineForm, setRedmineForm] = useState<RedmineForm>({
+    baseUrl: '',
+    apiKey: '',
+    projectId: '',
+    limit: 100,
+    statusId: 'open',
+  });
+  const [redmineProjects, setRedmineProjects] = useState<{ id: string; name: string }[]>([]);
+  const [redmineConnected, setRedmineConnected] = useState(false);
+  const [testingConnection, setTestingConnection] = useState(false);
 
   // Fetch defects
   const { data: defects = [], isLoading, refetch } = useQuery({
@@ -74,6 +97,45 @@ export default function DefectsPage() {
     },
     onError: () => toast.error('시드 데이터 주입 실패'),
   });
+
+  // Redmine import mutation
+  const redmineMutation = useMutation({
+    mutationFn: () => defectService.importFromRedmine({
+      baseUrl: redmineForm.baseUrl,
+      apiKey: redmineForm.apiKey,
+      projectId: redmineForm.projectId || undefined,
+      limit: redmineForm.limit,
+      statusId: redmineForm.statusId,
+    }),
+    onSuccess: (result) => {
+      toast.success(`${result.message}. 중복 건너뜀: ${result.skipped}`);
+      queryClient.invalidateQueries({ queryKey: ['defects'] });
+      queryClient.invalidateQueries({ queryKey: ['defect-stats'] });
+      setShowRedmineModal(false);
+      setRedmineConnected(false);
+      setRedmineProjects([]);
+    },
+    onError: (err: unknown) => {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || '가져오기 실패';
+      toast.error(msg);
+    },
+  });
+
+  const handleTestRedmine = async () => {
+    setTestingConnection(true);
+    try {
+      const result = await defectService.testRedmineConnection(redmineForm.baseUrl, redmineForm.apiKey);
+      setRedmineProjects(result.projects);
+      setRedmineConnected(true);
+      toast.success(`연결 성공! 프로젝트 ${result.projects.length}개 확인`);
+    } catch (err: unknown) {
+      const msg = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || '연결 실패';
+      toast.error(msg);
+      setRedmineConnected(false);
+    } finally {
+      setTestingConnection(false);
+    }
+  };
 
   // Delete all mutation
   const deleteAllMutation = useMutation({
@@ -232,6 +294,15 @@ export default function DefectsPage() {
           <RefreshCw size={16} />
         </button>
 
+        {/* Redmine import button */}
+        <button
+          onClick={() => setShowRedmineModal(true)}
+          className="flex items-center gap-2 px-3 py-2 bg-indigo-700/30 hover:bg-indigo-700/50 text-indigo-300 border border-indigo-700/40 rounded-lg text-sm transition-colors"
+        >
+          <Link size={15} />
+          Redmine 가져오기
+        </button>
+
         {/* Seed button */}
         <button
           onClick={() => seedMutation.mutate()}
@@ -342,6 +413,122 @@ export default function DefectsPage() {
           </div>
         )}
       </div>
+      {/* Redmine Modal */}
+      {showRedmineModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+          <div className="bg-slate-800 border border-slate-700 rounded-2xl w-full max-w-md mx-4 shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-700">
+              <div className="flex items-center gap-2">
+                <Link size={16} className="text-indigo-400" />
+                <h2 className="text-sm font-semibold text-slate-200">Redmine 이슈 가져오기</h2>
+              </div>
+              <button
+                onClick={() => { setShowRedmineModal(false); setRedmineConnected(false); setRedmineProjects([]); }}
+                className="text-slate-500 hover:text-slate-300"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="px-6 py-5 space-y-4">
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">Redmine URL</label>
+                <input
+                  type="text"
+                  placeholder="http://your-redmine.com"
+                  value={redmineForm.baseUrl}
+                  onChange={(e) => { setRedmineForm(f => ({ ...f, baseUrl: e.target.value })); setRedmineConnected(false); }}
+                  className="w-full bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">API 키</label>
+                <input
+                  type="password"
+                  placeholder="Redmine 계정 → 내 계정 → API 액세스 키"
+                  value={redmineForm.apiKey}
+                  onChange={(e) => { setRedmineForm(f => ({ ...f, apiKey: e.target.value })); setRedmineConnected(false); }}
+                  className="w-full bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Connection test */}
+              <button
+                onClick={handleTestRedmine}
+                disabled={!redmineForm.baseUrl || !redmineForm.apiKey || testingConnection}
+                className="w-full flex items-center justify-center gap-2 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors disabled:opacity-40"
+              >
+                {testingConnection ? <LoadingSpinner size="sm" /> : redmineConnected ? <CheckCircle size={15} className="text-green-400" /> : <Link size={15} />}
+                {testingConnection ? '연결 확인 중...' : redmineConnected ? '연결됨' : '연결 테스트'}
+              </button>
+
+              {redmineConnected && (
+                <>
+                  <div>
+                    <label className="block text-xs text-slate-400 mb-1">프로젝트 (선택)</label>
+                    <select
+                      value={redmineForm.projectId}
+                      onChange={(e) => setRedmineForm(f => ({ ...f, projectId: e.target.value }))}
+                      className="w-full bg-slate-700 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    >
+                      <option value="">전체 프로젝트</option>
+                      {redmineProjects.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs text-slate-400 mb-1">상태</label>
+                      <select
+                        value={redmineForm.statusId}
+                        onChange={(e) => setRedmineForm(f => ({ ...f, statusId: e.target.value }))}
+                        className="w-full bg-slate-700 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="open">미해결 (open)</option>
+                        <option value="closed">해결됨 (closed)</option>
+                        <option value="*">전체</option>
+                      </select>
+                    </div>
+                    <div className="w-24">
+                      <label className="block text-xs text-slate-400 mb-1">최대 건수</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={500}
+                        value={redmineForm.limit}
+                        onChange={(e) => setRedmineForm(f => ({ ...f, limit: Number(e.target.value) }))}
+                        className="w-full bg-slate-700 border border-slate-600 text-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Footer */}
+            <div className="flex gap-3 px-6 py-4 border-t border-slate-700">
+              <button
+                onClick={() => { setShowRedmineModal(false); setRedmineConnected(false); setRedmineProjects([]); }}
+                className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={() => redmineMutation.mutate()}
+                disabled={!redmineConnected || redmineMutation.isPending}
+                className="flex-1 flex items-center justify-center gap-2 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-40"
+              >
+                {redmineMutation.isPending ? <LoadingSpinner size="sm" /> : <Link size={15} />}
+                {redmineMutation.isPending ? '가져오는 중...' : '가져오기'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

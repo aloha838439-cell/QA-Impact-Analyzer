@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from src.app.routers import auth, defects, analysis
+from src.app.routers import auth, defects, analysis, redmine
 from src.app.database import engine, SessionLocal
 from src.models import base
 
@@ -72,6 +72,7 @@ _recompute_stale_embeddings()
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(defects.router, prefix="/api/defects", tags=["defects"])
 app.include_router(analysis.router, prefix="/api/analysis", tags=["analysis"])
+app.include_router(redmine.router, prefix="/api/redmine", tags=["redmine"])
 
 
 @app.get("/", tags=["health"])

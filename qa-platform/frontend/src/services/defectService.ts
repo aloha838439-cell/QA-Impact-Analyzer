@@ -49,4 +49,26 @@ export const defectService = {
     const response = await api.delete<{ message: string; deleted: number }>('/api/defects/all');
     return response.data;
   },
+
+  async testRedmineConnection(baseUrl: string, apiKey: string): Promise<{ ok: boolean; projects: { id: string; name: string }[] }> {
+    const response = await api.post('/api/redmine/test', { base_url: baseUrl, api_key: apiKey });
+    return response.data;
+  },
+
+  async importFromRedmine(params: {
+    baseUrl: string;
+    apiKey: string;
+    projectId?: string;
+    limit?: number;
+    statusId?: string;
+  }): Promise<{ message: string; created: number; skipped: number; total_fetched: number }> {
+    const response = await api.post('/api/redmine/import', {
+      base_url: params.baseUrl,
+      api_key: params.apiKey,
+      project_id: params.projectId || null,
+      limit: params.limit ?? 100,
+      status_id: params.statusId ?? 'open',
+    });
+    return response.data;
+  },
 };
