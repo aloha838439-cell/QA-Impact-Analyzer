@@ -29,6 +29,7 @@ interface RedmineForm {
   projectId: string;
   limit: number;
   statusId: string;
+  backendUrl: string;
 }
 
 export default function DefectsPage() {
@@ -48,6 +49,7 @@ export default function DefectsPage() {
     projectId: '',
     limit: 100,
     statusId: 'open',
+    backendUrl: 'http://localhost:8004',
   });
   const [redmineProjects, setRedmineProjects] = useState<{ id: string; name: string }[]>([]);
   const [redmineConnected, setRedmineConnected] = useState(false);
@@ -106,6 +108,7 @@ export default function DefectsPage() {
       projectId: redmineForm.projectId || undefined,
       limit: redmineForm.limit,
       statusId: redmineForm.statusId,
+      backendUrl: redmineForm.backendUrl,
     }),
     onSuccess: (result) => {
       toast.success(`${result.message}. 중복 건너뜀: ${result.skipped}`);
@@ -124,7 +127,7 @@ export default function DefectsPage() {
   const handleTestRedmine = async () => {
     setTestingConnection(true);
     try {
-      const result = await defectService.testRedmineConnection(redmineForm.baseUrl, redmineForm.apiKey);
+      const result = await defectService.testRedmineConnection(redmineForm.baseUrl, redmineForm.apiKey, redmineForm.backendUrl);
       setRedmineProjects(result.projects);
       setRedmineConnected(true);
       toast.success(`연결 성공! 프로젝트 ${result.projects.length}개 확인`);
@@ -433,6 +436,25 @@ export default function DefectsPage() {
 
             {/* Body */}
             <div className="px-6 py-5 space-y-4">
+              {/* 내부망 안내 */}
+              <div className="bg-amber-900/20 border border-amber-700/40 rounded-lg px-3 py-2.5 text-xs text-amber-300 space-y-1">
+                <p className="font-medium">내부망 Redmine 연결 방법</p>
+                <p>1. 백엔드를 로컬에서 실행: <code className="bg-slate-700 px-1 rounded">uvicorn src.main:app --port 8004</code></p>
+                <p>2. 아래 "백엔드 URL"을 <code className="bg-slate-700 px-1 rounded">http://localhost:8004</code> 로 설정</p>
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 mb-1">백엔드 URL</label>
+                <input
+                  type="text"
+                  placeholder="http://localhost:8004"
+                  value={redmineForm.backendUrl}
+                  onChange={(e) => { setRedmineForm(f => ({ ...f, backendUrl: e.target.value })); setRedmineConnected(false); }}
+                  className="w-full bg-slate-700 border border-slate-600 text-slate-200 placeholder-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+                <p className="text-xs text-slate-500 mt-1">내부망: http://localhost:8004 · 외부망: 기본값(Vercel) 사용 시 비워두세요</p>
+              </div>
+
               <div>
                 <label className="block text-xs text-slate-400 mb-1">Redmine URL</label>
                 <input

@@ -50,8 +50,11 @@ export const defectService = {
     return response.data;
   },
 
-  async testRedmineConnection(baseUrl: string, apiKey: string): Promise<{ ok: boolean; projects: { id: string; name: string }[] }> {
-    const response = await api.post('/api/redmine/test', { base_url: baseUrl, api_key: apiKey });
+  async testRedmineConnection(baseUrl: string, apiKey: string, backendUrl?: string): Promise<{ ok: boolean; projects: { id: string; name: string }[] }> {
+    const base = backendUrl ? backendUrl.replace(/\/$/, '') : '';
+    const response = base
+      ? await api.post(`${base}/api/redmine/test`, { base_url: baseUrl, api_key: apiKey })
+      : await api.post('/api/redmine/test', { base_url: baseUrl, api_key: apiKey });
     return response.data;
   },
 
@@ -61,14 +64,19 @@ export const defectService = {
     projectId?: string;
     limit?: number;
     statusId?: string;
+    backendUrl?: string;
   }): Promise<{ message: string; created: number; skipped: number; total_fetched: number }> {
-    const response = await api.post('/api/redmine/import', {
+    const base = params.backendUrl ? params.backendUrl.replace(/\/$/, '') : '';
+    const body = {
       base_url: params.baseUrl,
       api_key: params.apiKey,
       project_id: params.projectId || null,
       limit: params.limit ?? 100,
       status_id: params.statusId ?? 'open',
-    });
+    };
+    const response = base
+      ? await api.post(`${base}/api/redmine/import`, body)
+      : await api.post('/api/redmine/import', body);
     return response.data;
   },
 };
