@@ -1,8 +1,9 @@
 import json
-import ssl
-import urllib.request
+import requests
+from requests.packages.urllib3.exceptions import InsecureRequestWarning
 from typing import Optional
 
+requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
 PRIORITY_MAP = {
     "Immediate": "Critical",
@@ -21,16 +22,16 @@ STATUS_MAP = {
     "Rejected": "Closed",
 }
 
-# SSL 검증 무시 컨텍스트 (사내 Redmine 자체 서명 인증서 대응)
-_ssl_ctx = ssl.create_default_context()
-_ssl_ctx.check_hostname = False
-_ssl_ctx.verify_mode = ssl.CERT_NONE
-
 
 def _get(url: str, api_key: str) -> dict:
-    req = urllib.request.Request(url, headers={"X-Redmine-API-Key": api_key})
-    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
-        return json.loads(resp.read().decode())
+    resp = requests.get(
+        url,
+        headers={"X-Redmine-API-Key": api_key},
+        verify=False,
+        timeout=15,
+    )
+    resp.raise_for_status()
+    return resp.json()
 
 
 def fetch_projects(base_url: str, api_key: str) -> list[dict]:
@@ -46,10 +47,10 @@ def fetch_redmine_issues(
     status_id: str = "open",
 ) -> list[dict]:
     base = base_url.rstrip("/")
-    qs = f"limit={limit}&status_id={status_id}"
+    params = f"limit={limit}&status_id={status_id}"
     if project_id:
-        qs += f"&project_id={project_id}"
-    data = _get(f"{base}/issues.json?{qs}", api_key)
+        params += f"&project_id={project_id}"
+    data = _get(f"{base}/issues.json?{params}", api_key)
     return [_convert(i) for i in data.get("issues", [])]
 
 
