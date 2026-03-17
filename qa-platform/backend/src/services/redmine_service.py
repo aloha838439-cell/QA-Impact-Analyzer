@@ -1,4 +1,6 @@
-import httpx
+import json
+import ssl
+import urllib.request
 from typing import Optional
 
 
@@ -19,35 +21,36 @@ STATUS_MAP = {
     "Rejected": "Closed",
 }
 
-
-def _map_priority(priority_name: str) -> str:
-    return PRIORITY_MAP.get(priority_name, "Medium")
-
-
-def _map_status(status_name: str) -> str:
-    return STATUS_MAP.get(status_name, "Open")
+# SSL 검증 무시 컨텍스트 (사내 Redmine 자체 서명 인증서 대응)
+_ssl_ctx = ssl.create_default_context()
+_ssl_ctx.check_hostname = False
+_ssl_ctx.verify_mode = ssl.CERT_NONE
 
 
-async def fetch_redmine_issues(
+def _get(url: str, api_key: str) -> dict:
+    req = urllib.request.Request(url, headers={"X-Redmine-API-Key": api_key})
+    with urllib.request.urlopen(req, context=_ssl_ctx, timeout=15) as resp:
+        return json.loads(resp.read().decode())
+
+
+def fetch_projects(base_url: str, api_key: str) -> list[dict]:
+    data = _get(f"{base_url.rstrip('/')}/projects.json?limit=100", api_key)
+    return [{"id": p["identifier"], "name": p["name"]} for p in data.get("projects", [])]
+
+
+def fetch_redmine_issues(
     base_url: str,
     api_key: str,
     project_id: Optional[str] = None,
     limit: int = 100,
     status_id: str = "open",
 ) -> list[dict]:
-    """Redmine REST API에서 이슈를 가져와 결함 포맷으로 변환"""
-    base_url = base_url.rstrip("/")
-    headers = {"X-Redmine-API-Key": api_key}
-    params: dict = {"limit": limit, "status_id": status_id}
+    base = base_url.rstrip("/")
+    qs = f"limit={limit}&status_id={status_id}"
     if project_id:
-        params["project_id"] = project_id
-
-    async with httpx.AsyncClient(timeout=15.0, verify=False) as client:
-        response = await client.get(f"{base_url}/issues.json", headers=headers, params=params)
-        response.raise_for_status()
-
-    issues = response.json().get("issues", [])
-    return [_convert(issue) for issue in issues]
+        qs += f"&project_id={project_id}"
+    data = _get(f"{base}/issues.json?{qs}", api_key)
+    return [_convert(i) for i in data.get("issues", [])]
 
 
 def _convert(issue: dict) -> dict:
@@ -59,10 +62,9 @@ def _convert(issue: dict) -> dict:
     return {
         "title": issue.get("subject", ""),
         "description": issue.get("description") or issue.get("subject", ""),
-        "severity": _map_priority(issue.get("priority", {}).get("name", "Normal")),
+        "severity": PRIORITY_MAP.get(issue.get("priority", {}).get("name", "Normal"), "Medium"),
         "module": module,
-        "status": _map_status(issue.get("status", {}).get("name", "New")),
+        "status": STATUS_MAP.get(issue.get("status", {}).get("name", "New"), "Open"),
         "reporter": issue.get("author", {}).get("name", ""),
         "related_features": [],
-        "redmine_id": issue.get("id"),
     }

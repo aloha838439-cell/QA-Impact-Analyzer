@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
 from typing import Optional
-import httpx
+import urllib.error
 
 from src.app.database import get_db
 from src.app.auth import get_current_user
 from src.models.user import User
-from src.services.redmine_service import fetch_redmine_issues
+from src.services.redmine_service import fetch_projects, fetch_redmine_issues
 from src.services.defect_service import DefectService
 
 router = APIRouter()
@@ -16,7 +16,6 @@ router = APIRouter()
 class RedmineConnectRequest(BaseModel):
     base_url: str
     api_key: str
-    project_id: Optional[str] = None
 
 
 class RedmineImportRequest(BaseModel):
@@ -28,25 +27,20 @@ class RedmineImportRequest(BaseModel):
 
 
 @router.post("/test")
-async def test_redmine_connection(
+def test_redmine_connection(
     body: RedmineConnectRequest,
     current_user: User = Depends(get_current_user),
 ):
     """Redmine 연결 테스트 — 프로젝트 목록 반환"""
-    base_url = body.base_url.rstrip("/")
-    headers = {"X-Redmine-API-Key": body.api_key}
     try:
-        async with httpx.AsyncClient(timeout=10.0, verify=False) as client:
-            resp = await client.get(f"{base_url}/projects.json", headers=headers)
-            resp.raise_for_status()
-        projects = [
-            {"id": p["identifier"], "name": p["name"]}
-            for p in resp.json().get("projects", [])
-        ]
+        projects = fetch_projects(body.base_url, body.api_key)
         return {"ok": True, "projects": projects}
-    except httpx.HTTPStatusError as e:
+    except urllib.error.HTTPError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Redmine 응답 오류: {e.response.status_code}")
+                            detail=f"Redmine 응답 오류: {e.code}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"연결 실패: {e.reason}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"연결 실패: {str(e)}")
@@ -60,16 +54,19 @@ async def import_from_redmine(
 ):
     """Redmine 이슈를 결함 데이터로 가져오기"""
     try:
-        issues = await fetch_redmine_issues(
+        issues = fetch_redmine_issues(
             base_url=body.base_url,
             api_key=body.api_key,
             project_id=body.project_id or None,
             limit=body.limit,
             status_id=body.status_id,
         )
-    except httpx.HTTPStatusError as e:
+    except urllib.error.HTTPError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
-                            detail=f"Redmine 응답 오류: {e.response.status_code}")
+                            detail=f"Redmine 응답 오류: {e.code}")
+    except urllib.error.URLError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
+                            detail=f"연결 실패: {e.reason}")
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST,
                             detail=f"가져오기 실패: {str(e)}")
